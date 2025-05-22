@@ -15,8 +15,8 @@ export class Matrix {
       );
     } else if (Array.isArray(param1)) {
       this.rows = param1.length;
-      this.cols = param1[0].length;
-      this.contents = param1.map((row) => [...row]);
+      this.cols = this.rows === 0 ? 0 : param1[0].length;
+      this.contents = param1;
     } else {
       throw new Error("Invalid constructor arguments");
     }

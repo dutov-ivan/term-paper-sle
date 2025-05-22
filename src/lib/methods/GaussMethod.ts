@@ -13,11 +13,7 @@ export class GaussMethod implements IMethod {
     const augmentedMatrix = new Matrix(matrix.contents);
     this.lastEchelonMatrix = augmentedMatrix;
 
-    for (
-      let sourceRow = 0;
-      sourceRow < augmentedMatrix.rows - 1;
-      sourceRow++
-    ) {
+    for (let sourceRow = 0; sourceRow < augmentedMatrix.rows - 1; sourceRow++) {
       let pivotRow = sourceRow;
       for (let i = sourceRow + 1; i < augmentedMatrix.rows; i++) {
         if (
@@ -36,7 +32,7 @@ export class GaussMethod implements IMethod {
           sourceRow,
           targetRow: pivotRow,
           action: StepAction.SwapRows,
-          coefs: new Matrix(augmentedMatrix.contents),
+          coefficients: new Matrix(augmentedMatrix.contents),
         };
       }
       for (
@@ -56,14 +52,14 @@ export class GaussMethod implements IMethod {
             eliminationRow,
             columnIndex,
             augmentedMatrix.get(eliminationRow, columnIndex) +
-            mul * augmentedMatrix.get(sourceRow, columnIndex)
+              mul * augmentedMatrix.get(sourceRow, columnIndex)
           );
         }
         yield {
           sourceRow,
           targetRow: eliminationRow,
           action: StepAction.Eliminate,
-          coefs: new Matrix(augmentedMatrix.contents),
+          coefficients: new Matrix(augmentedMatrix.contents),
         };
       }
     }

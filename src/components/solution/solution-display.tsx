@@ -1,6 +1,7 @@
-import React, { useRef, useLayoutEffect, useState } from "react";
+import React, { useRef, useLayoutEffect, useState, useCallback } from "react";
 import SolutionCell from "@/components/solution/solution-cell.tsx";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Skeleton } from "../ui/skeleton";
 
 function SolutionDisplay({
   matrix,
@@ -9,8 +10,9 @@ function SolutionDisplay({
   matrix: number[][];
   setMatrix: React.Dispatch<React.SetStateAction<number[][]>>;
 }) {
-  const setContents = (rowIndex: number, columnIndex: number) => {
-    return function set(contents: number) {
+  // Memoize setContents to avoid stale closure
+  const setContents = useCallback(
+    (rowIndex: number, columnIndex: number) => (contents: number) => {
       setMatrix((prev) =>
         prev.map((row, i) =>
           row.map((val, j) =>
@@ -18,8 +20,9 @@ function SolutionDisplay({
           )
         )
       );
-    };
-  };
+    },
+    [setMatrix]
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +59,7 @@ function SolutionDisplay({
     <div
       ref={containerRef}
       className="overflow-auto"
-      style={{ width: "100%", height: "500px", position: "relative" }}
+      style={{ width: "100%", height: "100%", position: "relative" }}
     >
       <div
         style={{
@@ -77,6 +80,7 @@ function SolutionDisplay({
             }}
           >
             <div style={{ width: `${before}px` }} />
+
             {columnItems.map((column) => (
               <div
                 key={column.key}
@@ -102,4 +106,4 @@ function SolutionDisplay({
   );
 }
 
-export default SolutionDisplay;
+export default React.memo(SolutionDisplay);
