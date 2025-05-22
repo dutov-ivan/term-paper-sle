@@ -1,10 +1,14 @@
 import { Matrix } from "../Matrix";
-import { StepAction } from "../StepAction";
+import {StepAction} from "@/lib/steps/StepAction.ts";
 
 // Step record in TypeScript
 export interface Step {
   sourceRow: number;
   targetRow: number;
   action: StepAction;
-  coefs: Matrix;
+  coefficients: Matrix;
+}
+
+const makeStepDescription = (step: Step) => {
+
 }

@@ -1,0 +1,1 @@
+/*eslint-disable*/import type{Messages}from"@lingui/core";export const messages=JSON.parse("{\"theme.dark\":[\"Темна\"],\"theme.light\":[\"Світла\"],\"theme.system\":[\"Системна\"]}")as Messages;
