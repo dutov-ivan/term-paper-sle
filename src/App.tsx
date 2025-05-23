@@ -13,7 +13,7 @@ import {
 const App = () => {
   return (
     <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel defaultSize={66}>
+      <ResizablePanel defaultSize={66} minSize={40}>
         <div className="flex flex-col gap-8 h-screen p-4">
           <div className="inline-flex">
             <AppMenubar />
@@ -24,7 +24,7 @@ const App = () => {
         </div>
       </ResizablePanel>
       <ResizableHandle />
-      <ResizablePanel defaultSize={34}>
+      <ResizablePanel defaultSize={34} minSize={16}>
         <div className="h-full p-4">
           <ActionSidebar />
         </div>

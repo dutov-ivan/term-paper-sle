@@ -5,7 +5,6 @@ import type { SolutionResult } from "../solution/SolutionResult";
 import { SolutionResultType } from "../solution/SolutionResultType";
 import { StepAction } from "../steps/StepAction";
 
-// GaussMethod in TypeScript (logic ported from C#)
 export class GaussMethod implements IMethod {
   private lastEchelonMatrix?: Matrix;
 

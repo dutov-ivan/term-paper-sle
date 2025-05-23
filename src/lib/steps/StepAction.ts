@@ -2,4 +2,5 @@
 export enum StepAction {
   Eliminate = "Eliminate",
   SwapRows = "SwapRows",
+  Done = "Done",
 }

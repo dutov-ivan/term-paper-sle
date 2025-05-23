@@ -12,7 +12,7 @@ import { type Theme, useTheme } from "@/components/theme-provider.tsx";
 import { dynamicActivate, locales } from "@/lib/i18n.ts";
 import { useEffect, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
-import MatrixLoadingDialog from "./matrix-loading-dialog";
+import MatrixLoadingDialog from "./matrix-upload-dialog";
 import { useImportModals } from "@/store/importModals";
 
 type Themes = {
