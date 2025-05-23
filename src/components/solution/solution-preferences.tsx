@@ -1,8 +1,5 @@
-import React from "react";
-import type { SolutionPreferencesType } from "@/lib/solution/SolutionPreferences.ts";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
-import { useSafeNumericInput } from "@/hooks/useSafeNumericInput.ts";
 import {
   Select,
   SelectContent,
@@ -12,16 +9,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MethodType } from "@/lib/methods/IMethod.ts";
+import {
+  getMethodTypeFromClass,
+  MethodType,
+  type IMethod,
+} from "@/lib/methods/IMethod.ts";
 import { Button } from "../ui/button";
-
-interface SolutionPreferencesProps {
-  size: number;
-  setSize: React.Dispatch<React.SetStateAction<number>>;
-  method: MethodType;
-  setMethod: React.Dispatch<React.SetStateAction<MethodType>>;
-  onGenerateRandomMatrix?: () => void; // new prop
-}
+import { useMatrixStore } from "@/store/matrix";
+import { useSolutionStore } from "@/store/solution";
+import { GaussMethod } from "@/lib/methods/GaussMethod";
+import { useEffect, useState, useRef } from "react";
+import { ValidationAlert } from "@/components/ui/validation-alert";
+import { z } from "zod";
 
 type MethodsDropdown = {
   [K in MethodType]: string;
@@ -33,36 +32,78 @@ const methodsDropdown: MethodsDropdown = {
   InverseMatrix: "Inverse Matrix",
 };
 
-function SolutionPreferences({
-  size,
-  setSize,
-  method,
-  setMethod,
-  onGenerateRandomMatrix,
-}: SolutionPreferencesProps) {
-  const { value: sizeValue, onChange: changeSizeValue } = useSafeNumericInput(
-    size,
-    setSize
+// Zod schema for size validation
+const sizeSchema = z
+  .number({ invalid_type_error: "Size must be a number" })
+  .int("Size must be an integer")
+  .min(1, "Size must be at least 1")
+  .max(1000, "Size must be at most 1000");
+
+function SolutionPreferences() {
+  const size = useMatrixStore((state) => state.size);
+  const setSize = useMatrixStore((state) => state.setSize);
+  const setRandomMatrix = useMatrixStore((state) => state.setRandomMatrix);
+
+  const solutionMethod = useSolutionStore((state) => state.method);
+  const setMethodStore = useSolutionStore((state) => state.setMethod);
+
+  const [method, setMethod] = useState<MethodType | null>(
+    solutionMethod && getMethodTypeFromClass(solutionMethod)
   );
 
+  // Local state for size input
+  const [sizeInput, setSizeInput] = useState(size.toString());
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setSizeInput(size.toString());
+  }, [size]);
+
+  useEffect(() => {
+    if (!method) return;
+    setMethodStore(method);
+  }, [method]);
+
+  const label = method ? methodsDropdown[method] : "";
+
   return (
-    <div className="flex gap-4 items-end">
+    <div className="flex gap-4 items-end" style={{ position: "relative" }}>
       <div className="flex flex-col gap-4">
         <Label htmlFor="size">Size</Label>
         <Input
-          value={size}
+          ref={inputRef}
+          value={sizeInput}
           type="number"
-          onChange={(e) => changeSizeValue(e.target.value)}
+          onChange={(e) => setSizeInput(e.target.value)}
+        />
+        <ValidationAlert
+          message={error || ""}
+          open={!!error}
+          onClose={() => setError(null)}
+          anchorRef={inputRef as React.RefObject<HTMLElement>}
         />
       </div>
-
+      <Button
+        onClick={() => {
+          let parsed = Number(sizeInput);
+          const result = sizeSchema.safeParse(parsed);
+          if (!result.success) {
+            setError(result.error.errors[0].message);
+            return;
+          }
+          setError(null);
+          setSize(parsed);
+        }}
+      >
+        Resize Matrix
+      </Button>
       <div className="flex flex-col gap-4">
         <Select
-          value={method}
+          value={label}
           onValueChange={(value) => setMethod(value as MethodType)}
         >
           <Label htmlFor="methods">Methods</Label>
-
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select a method" />
           </SelectTrigger>
@@ -78,8 +119,7 @@ function SolutionPreferences({
           </SelectContent>
         </Select>
       </div>
-
-      <Button onClick={onGenerateRandomMatrix}>Generate Random Matrix</Button>
+      <Button onClick={() => setRandomMatrix()}>Generate Random Matrix</Button>
     </div>
   );
 }

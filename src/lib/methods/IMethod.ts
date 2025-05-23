@@ -13,7 +13,7 @@ export const MethodType = {
 
 export type MethodType = (typeof MethodType)[keyof typeof MethodType];
 
-export const CreateMethodFromType = (type: MethodType) => {
+export const createSolutionMethodFromType = (type: MethodType) => {
   switch (type) {
     case MethodType.Gauss:
       return new GaussMethod();
@@ -23,6 +23,18 @@ export const CreateMethodFromType = (type: MethodType) => {
       return new MatrixMethod();
     default:
       throw new Error(`Unknown method type: ${type}`);
+  }
+};
+
+export const getMethodTypeFromClass = (method: IMethod): MethodType => {
+  if (method instanceof GaussMethod) {
+    return MethodType.Gauss;
+  } else if (method instanceof JordanGaussMethod) {
+    return MethodType.GaussJordan;
+  } else if (method instanceof MatrixMethod) {
+    return MethodType.InverseMatrix;
+  } else {
+    throw new Error("Invalid method");
   }
 };
 

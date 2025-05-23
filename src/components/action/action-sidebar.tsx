@@ -3,33 +3,29 @@ import type { Step } from "@/lib/steps/Step.ts";
 import { Button } from "../ui/button";
 import { ArrowLeft, ArrowRight, UndoDot } from "lucide-react";
 import type { SolutionPreferencesType } from "@/lib/solution/SolutionPreferences";
-import { CreateMethodFromType, MethodType } from "@/lib/methods/IMethod";
+import {
+  createSolutionMethodFromType,
+  MethodType,
+} from "@/lib/methods/IMethod";
 import { Matrix } from "@/lib/Matrix";
 import { toast } from "sonner";
+import { useMatrixStore } from "@/store/matrix";
+import { useSolutionStore } from "@/store/solution";
 
-interface ActionMenuProps {
-  setMatrix: React.Dispatch<React.SetStateAction<number[][]>>;
-  matrix: number[][];
-}
-
-interface ActionSidebarProps extends ActionMenuProps {
-  method: MethodType;
-  matrix: number[][];
-  setMatrix: React.Dispatch<React.SetStateAction<number[][]>>;
-}
-
-function ActionSidebar({ method, matrix, setMatrix }: ActionSidebarProps) {
+function ActionSidebar() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const methodObj = useMemo(() => CreateMethodFromType(method), [method]);
+  const matrix = useMatrixStore((state) => state.matrix);
+  const setMatrix = useMatrixStore((state) => state.setMatrix);
+  const method = useSolutionStore((state) => state.method);
+
   const matrixObj = useMemo(() => new Matrix(matrix), [matrix]);
-  // Use a ref for the iterator so it persists across renders
   const iteratorRef = useRef<Iterator<Step> | null>(null);
 
-  // Reset iterator when method or matrix changes
   useEffect(() => {
-    iteratorRef.current = methodObj.getForwardSteps(matrixObj);
-  }, [methodObj, matrixObj]);
+    if (!method) return;
+    iteratorRef.current = method.getForwardSteps(matrixObj);
+  }, [method, matrixObj]);
 
   const handleStart = () => {
     setIsRunning(true);
@@ -39,10 +35,14 @@ function ActionSidebar({ method, matrix, setMatrix }: ActionSidebarProps) {
   };
 
   const handleReset = () => {
+    if (!method) {
+      toast.error("Please select a method first.");
+      return;
+    }
     setIsRunning(false);
     setSteps([]);
     setMatrix([]);
-    iteratorRef.current = methodObj.getForwardSteps(matrixObj);
+    iteratorRef.current = method.getForwardSteps(matrixObj);
   };
 
   const forwardOne = () => {

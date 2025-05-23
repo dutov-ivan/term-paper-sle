@@ -2,33 +2,18 @@ import React, { useRef, useLayoutEffect, useState, useCallback } from "react";
 import SolutionCell from "@/components/solution/solution-cell.tsx";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Skeleton } from "../ui/skeleton";
+import { useMatrixStore } from "@/store/matrix";
 
-function SolutionDisplay({
-  matrix,
-  setMatrix,
-}: {
-  matrix: number[][];
-  setMatrix: React.Dispatch<React.SetStateAction<number[][]>>;
-}) {
-  // Memoize setContents to avoid stale closure
-  const setContents = useCallback(
-    (rowIndex: number, columnIndex: number) => (contents: number) => {
-      setMatrix((prev) =>
-        prev.map((row, i) =>
-          row.map((val, j) =>
-            i === rowIndex && j === columnIndex ? contents : val
-          )
-        )
-      );
-    },
-    [setMatrix]
-  );
-
+function SolutionDisplay() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const matrix = useMatrixStore((state) => state.matrix);
+  const rows = matrix.length;
+  const columns = rows === 0 ? 0 : matrix[0].length;
+  const isLoadingMatrix = useMatrixStore((state) => state.isLoadingMatrix);
 
   // Horizontal column virtualizer
   const columnVirtualizer = useVirtualizer({
-    count: matrix[0]?.length ?? 0,
+    count: columns,
     horizontal: true,
     getScrollElement: () => containerRef.current,
     estimateSize: () => 120,
@@ -37,9 +22,9 @@ function SolutionDisplay({
 
   // Vertical row virtualizer
   const rowVirtualizer = useVirtualizer({
-    count: matrix.length,
+    count: rows,
     getScrollElement: () => containerRef.current,
-    estimateSize: () => 68,
+    estimateSize: () => 50,
     overscan: 5,
   });
 
@@ -55,7 +40,11 @@ function SolutionDisplay({
         ]
       : [0, 0];
 
-  return (
+  return rows === 0 ? (
+    <div className="w-full h-full flex items-center justify-center text-lg text-muted-foreground">
+      Create a matrix to get started!
+    </div>
+  ) : (
     <div
       ref={containerRef}
       className="overflow-auto"
@@ -90,12 +79,25 @@ function SolutionDisplay({
                   boxSizing: "border-box",
                 }}
               >
-                <SolutionCell
-                  contents={matrix[row.index][column.index]}
-                  columnIndex={column.index}
-                  rowLength={matrix[0].length}
-                  setContents={setContents(row.index, column.index)}
-                />
+                {isLoadingMatrix ? (
+                  <Skeleton
+                    key={`${row.index}-${column.index}`}
+                    className="absolute bg-muted rounded-md"
+                    style={{
+                      top: row.start + 4,
+                      left: column.start + 4,
+                      width: column.size - 8,
+                      height: row.size - 8,
+                    }}
+                  />
+                ) : (
+                  <SolutionCell
+                    contents={matrix[row.index][column.index]}
+                    rowIndex={row.index}
+                    columnIndex={column.index}
+                    rowLength={columns}
+                  />
+                )}
               </div>
             ))}
             <div style={{ width: `${after}px` }} />

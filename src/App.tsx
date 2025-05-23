@@ -11,22 +11,6 @@ import {
 } from "./components/ui/resizable";
 
 const App = () => {
-  const [matrix, setMatrix] = useState<number[][]>([]);
-  console.log("App.tsx: matrix", matrix);
-  const [size, setSize] = useState(0);
-  const [method, setMethod] = useState<MethodType>(MethodType.Gauss);
-
-  const handleGenerateRandomMatrix = () => {
-    if (!size || size < 1) return;
-    const newMatrix = Array.from({ length: size }, () =>
-      Array.from(
-        { length: size + 1 },
-        () => Math.floor(Math.random() * 21) - 10
-      )
-    );
-    setMatrix(newMatrix);
-  };
-
   return (
     <ResizablePanelGroup direction="horizontal">
       <ResizablePanel defaultSize={66}>
@@ -35,26 +19,14 @@ const App = () => {
             <AppMenubar />
           </div>
 
-          <SolutionPreferences
-            size={size}
-            setSize={setSize}
-            method={method}
-            setMethod={setMethod}
-            onGenerateRandomMatrix={handleGenerateRandomMatrix}
-          />
-          {matrix.length > 0 && (
-            <SolutionDisplay matrix={matrix} setMatrix={setMatrix} />
-          )}
+          <SolutionPreferences />
+          <SolutionDisplay />
         </div>
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel defaultSize={34}>
         <div className="h-full p-4">
-          <ActionSidebar
-            method={method}
-            matrix={matrix}
-            setMatrix={setMatrix}
-          />
+          <ActionSidebar />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

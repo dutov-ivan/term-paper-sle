@@ -1,57 +1,54 @@
-import { GridCell } from "@/components/ui/grid";
 import { Input } from "@/components/ui/input.tsx";
 import { useSafeNumericInput } from "@/hooks/useSafeNumericInput.ts";
-import { InlineMath as RawInlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
-import { clsx } from "clsx";
-import React, { useState, useEffect, useRef } from "react";
-
-const MemoizedInlineMath = React.memo(RawInlineMath);
+import { useMatrixStore } from "@/store/matrix";
 
 interface SolutionCellProps {
-  contents: number;
-  rowLength: number;
-  setContents: (cell: number) => void;
+  rowIndex: number;
   columnIndex: number;
+  rowLength: number;
+  contents: number;
 }
 
 function SolutionCell({
-  contents,
   columnIndex,
+  rowIndex,
   rowLength,
-  setContents,
+  contents,
 }: SolutionCellProps) {
   const isEnding = columnIndex === rowLength - 1;
   const isStarting = columnIndex === 0;
-  const coefficient = `x_{${columnIndex + 1}}`;
+  const setContents = useMatrixStore((state) => state.setCell);
+
   const { value, onChange: onValueChange } = useSafeNumericInput(
     contents,
-    setContents
+    (num) => setContents(rowIndex, columnIndex, num)
   );
 
-  // Calculate width: 1ch per char, but clamp to a max of 12ch for visual consistency
   const charCount = value.length > 0 ? value.length : 1;
   const inputWidth = `min(calc(${charCount}ch + 1.2rem), 11ch)`;
-  const minWidth = "48px";
-  const maxWidth = undefined; // let the ch clamp handle it
 
   return (
     <div className="flex items-center justify-center p-1">
       <div className="flex items-center justify-between w-full h-full px-2">
         <div className="flex items-center gap-1">
-          {!isStarting && <span>{isEnding ? "=" : "+"}</span>}
+          {!isStarting && (
+            <span className="latex-symbol">{isEnding ? "=" : "+"}</span>
+          )}
           <Input
-            className="w-full text-[1.125rem] px-2"
-            style={{ width: inputWidth, minWidth, maxWidth }}
+            className="latex-input"
+            style={{ width: inputWidth, minWidth: "48px" }}
             value={value}
             onChange={(e) => onValueChange(e.target.value)}
           />
         </div>
         {!isEnding && (
-          <div className="flex items-center gap-1">
-            <MemoizedInlineMath math="\cdot" />
-            <MemoizedInlineMath math={coefficient} />
-          </div>
+          <>
+            <span className="latex-symbol">&middot;</span>
+            <span className="latex-symbol">
+              x<sub>{columnIndex + 1}</sub>
+            </span>
+          </>
         )}
       </div>
     </div>
