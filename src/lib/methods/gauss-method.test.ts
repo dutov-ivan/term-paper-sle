@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { GaussMethod } from "./GaussMethod";
-import { Matrix } from "../Matrix";
+import { Matrix } from "../math/Matrix";
 import { SolutionResultType } from "../solution/SolutionResultType";
 import type { IMethod } from "./IMethod";
 

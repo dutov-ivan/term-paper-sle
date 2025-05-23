@@ -1,9 +1,9 @@
-import { Matrix } from "../Matrix";
 import type { Step } from "../steps/Step";
 import type { SolutionResult } from "../solution/SolutionResult";
 import { GaussMethod } from "./GaussMethod";
 import { JordanGaussMethod } from "./JordanGaussMethod";
 import { MatrixMethod } from "./MatrixMethod";
+import type { DecimalMatrix } from "../math/DecimalMatrix";
 
 export const MethodType = {
   Gauss: "Gauss",
@@ -40,6 +40,7 @@ export const getMethodTypeFromClass = (method: IMethod): MethodType => {
 
 // IMethod interface in TypeScript
 export interface IMethod {
-  getForwardSteps(matrix: Matrix): IterableIterator<Step>;
+  getForwardSteps(): IterableIterator<Step>;
   backSubstitute(): SolutionResult;
+  run(matrix: number[][]): IterableIterator<Step>;
 }

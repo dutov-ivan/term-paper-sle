@@ -65,8 +65,6 @@ function SolutionPreferences() {
     setMethodStore(method);
   }, [method]);
 
-  const label = method ? methodsDropdown[method] : "";
-
   return (
     <div className="flex gap-4 items-end" style={{ position: "relative" }}>
       <div className="flex flex-col gap-4">
@@ -86,7 +84,7 @@ function SolutionPreferences() {
       </div>
       <Button
         onClick={() => {
-          let parsed = Number(sizeInput);
+          const parsed = Number(sizeInput);
           const result = sizeSchema.safeParse(parsed);
           if (!result.success) {
             setError(result.error.errors[0].message);
@@ -100,7 +98,7 @@ function SolutionPreferences() {
       </Button>
       <div className="flex flex-col gap-4">
         <Select
-          value={label}
+          value={method ?? undefined}
           onValueChange={(value) => setMethod(value as MethodType)}
         >
           <Label htmlFor="methods">Methods</Label>

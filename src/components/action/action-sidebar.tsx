@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import type { Step } from "@/lib/steps/Step.ts";
 import { Button } from "../ui/button";
 import { ArrowLeft, ArrowRight, UndoDot } from "lucide-react";
-import { Matrix } from "@/lib/Matrix";
 import { toast } from "sonner";
 import { useMatrixStore } from "@/store/matrix";
 import { useSolutionStore } from "@/store/solution";
@@ -20,13 +19,13 @@ function ActionSidebar() {
 
   const setMatrix = useMatrixStore((state) => state.setMatrix);
   const method = useSolutionStore((state) => state.method);
+  const setResult = useSolutionStore((state) => state.setSolutionResult);
 
   const iteratorRef = useRef<Iterator<Step> | null>(null);
 
   useEffect(() => {
     if (!method) return;
-    const matrixObj = new Matrix(matrix);
-    iteratorRef.current = method.getForwardSteps(matrixObj);
+    iteratorRef.current = method.run(matrix);
   }, [method]);
 
   const handleStart = () => {
@@ -38,11 +37,6 @@ function ActionSidebar() {
   };
 
   const handleReset = () => {
-    if (!isStarted) {
-      toast.error("Please start the process first.");
-      return;
-    }
-
     if (!method) {
       toast.error("Please select a method first.");
       return;
@@ -54,9 +48,9 @@ function ActionSidebar() {
     setSteps([]);
     setCurrentStepIndex(-1);
     setMatrix(startingMatrix!.map((row) => [...row]));
+    setResult(null);
 
-    const matrixObj = new Matrix(startingMatrix!);
-    iteratorRef.current = method.getForwardSteps(matrixObj);
+    iteratorRef.current = method.getForwardSteps();
   };
 
   const forwardOne = () => {
@@ -74,19 +68,21 @@ function ActionSidebar() {
 
     if (currentStepIndex + 1 < steps.length) {
       const step = steps[currentStepIndex + 1];
-      setMatrix([...step.coefficients.contents]);
+      setMatrix([...step.coefficients]);
       setCurrentStepIndex((prev) => prev + 1);
     } else {
       const nextStep = iteratorRef.current.next();
       if (nextStep.done) {
         setIsRunning(false);
         toast.success("Hooray! You have reached the end of the steps.");
+        const result = method.backSubstitute();
+        setResult(result);
         return;
       }
       const step = nextStep.value;
       setSteps((prev) => [...prev, step]);
       setCurrentStepIndex((prev) => prev + 1);
-      setMatrix([...step.coefficients.contents]);
+      setMatrix([...step.coefficients]);
     }
   };
 
@@ -100,7 +96,7 @@ function ActionSidebar() {
       return;
     }
     const lastStep = steps[steps.length - 1];
-    setMatrix([...lastStep.coefficients.contents]);
+    setMatrix([...lastStep.coefficients]);
     setSteps((prev) => prev.slice(0, prev.length - 1));
     setCurrentStepIndex((prev) => prev - 1);
   };
@@ -137,7 +133,11 @@ function ActionSidebar() {
           </Button>
         </div>
 
-        <Button disabled={!isStarted} onClick={handleReset} variant="outline">
+        <Button
+          disabled={!isStarted && steps.length === 0}
+          onClick={handleReset}
+          variant="outline"
+        >
           Reset <UndoDot />
         </Button>
       </div>

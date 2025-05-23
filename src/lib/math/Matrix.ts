@@ -1,12 +1,12 @@
 // Matrix model in TypeScript
-export class Matrix {
+export class Matrix<T> {
   public readonly rows: number;
   public readonly cols: number;
-  public contents: number[][];
+  public contents: T[][];
 
   constructor(height: number, width: number);
-  constructor(data: number[][]);
-  constructor(param1: number | number[][], param2?: number) {
+  constructor(data: T[][]);
+  constructor(param1: number | T[][], param2?: number) {
     if (typeof param1 === "number" && typeof param2 === "number") {
       this.rows = param1;
       this.cols = param2;
@@ -22,11 +22,11 @@ export class Matrix {
     }
   }
 
-  get(x: number, y: number): number {
+  get(x: number, y: number): T {
     return this.contents[x][y];
   }
 
-  set(x: number, y: number, value: number): void {
+  set(x: number, y: number, value: T): void {
     this.contents[x][y] = value;
   }
 
@@ -35,9 +35,5 @@ export class Matrix {
       this.contents[toRow],
       this.contents[fromRow],
     ];
-  }
-
-  static from(data: number[][]): Matrix {
-    return new Matrix(data);
   }
 }

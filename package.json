@@ -27,6 +27,7 @@
     "@types/react-katex": "^3.0.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "decimal.js": "^10.5.0",
     "i18next": "^25.2.0",
     "katex": "^0.16.22",
     "lucide-react": "^0.511.0",

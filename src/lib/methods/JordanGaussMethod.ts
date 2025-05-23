@@ -1,16 +1,8 @@
-import { Matrix } from "../Matrix";
+import { Matrix } from "../math/Matrix";
 import type { Step } from "../steps/Step";
 import type { IMethod } from "./IMethod";
 import type { SolutionResult } from "../solution/SolutionResult";
 import { SolutionResultType } from "../solution/SolutionResultType";
+import { StepAction } from "../steps/StepAction";
 
-// JordanGaussMethod stub in TypeScript
-export class JordanGaussMethod implements IMethod {
-  backSubstitute(): SolutionResult {
-    throw new Error("Not implemented");
-  }
-
-  *getForwardSteps(matrix: Matrix): IterableIterator<Step> {
-    throw new Error("Not implemented");
-  }
-}
+export class JordanGaussMethod implements IMethod {}

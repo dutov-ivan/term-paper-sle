@@ -1,76 +1,110 @@
-import { Matrix } from "../Matrix";
 import type { Step } from "../steps/Step";
-import type { IMethod } from "./IMethod";
 import type { SolutionResult } from "../solution/SolutionResult";
 import { SolutionResultType } from "../solution/SolutionResultType";
 import { StepAction } from "../steps/StepAction";
+import { DecimalMatrix } from "../math/DecimalMatrix";
+import type Decimal from "decimal.js";
+import { Method } from "./Method";
+import { isNearZero } from "../math/utils";
 
-export class GaussMethod implements IMethod {
-  private lastEchelonMatrix?: Matrix;
-
-  *getForwardSteps(matrix: Matrix): IterableIterator<Step> {
-    const augmentedMatrix = new Matrix(matrix.contents);
-    this.lastEchelonMatrix = augmentedMatrix;
+export class GaussMethod extends Method {
+  *getForwardSteps(): IterableIterator<Step> {
+    if (!this.matrix) {
+      throw new Error("Matrix not initialized");
+    }
+    const augmentedMatrix = this.matrix;
 
     for (let sourceRow = 0; sourceRow < augmentedMatrix.rows - 1; sourceRow++) {
-      let pivotRow = sourceRow;
-      for (let i = sourceRow + 1; i < augmentedMatrix.rows; i++) {
-        if (
-          Math.abs(augmentedMatrix.get(i, sourceRow)) >
-          Math.abs(augmentedMatrix.get(pivotRow, sourceRow))
-        ) {
-          pivotRow = i;
-        }
-      }
-      if (Math.abs(augmentedMatrix.get(pivotRow, sourceRow)) < 1e-12) {
+      yield* this.performPivotSwap(augmentedMatrix, sourceRow);
+      yield* this.performRowElimination(augmentedMatrix, sourceRow);
+    }
+  }
+
+  private *performPivotSwap(augmentedMatrix: DecimalMatrix, sourceRow: number) {
+    const pivotRow = this.findPivotRow(augmentedMatrix, sourceRow);
+    if (isNearZero(augmentedMatrix.get(pivotRow, sourceRow).abs())) {
+      return;
+    }
+    if (pivotRow !== sourceRow) {
+      augmentedMatrix.swapRows(sourceRow, pivotRow);
+      yield {
+        sourceRow: sourceRow,
+        targetRow: pivotRow,
+        action: StepAction.SwapRows,
+        coefficients: augmentedMatrix.toNumbers(),
+      };
+    }
+  }
+
+  private *performRowElimination(
+    augmentedMatrix: DecimalMatrix,
+    sourceRow: number
+  ) {
+    for (
+      let eliminationRow = sourceRow + 1;
+      eliminationRow < augmentedMatrix.rows;
+      eliminationRow++
+    ) {
+      if (!this.isRowEliminated(augmentedMatrix, sourceRow, eliminationRow)) {
         continue;
       }
-      if (pivotRow !== sourceRow) {
-        augmentedMatrix.swapRows(sourceRow, pivotRow);
-        yield {
-          sourceRow,
-          targetRow: pivotRow,
-          action: StepAction.SwapRows,
-          coefficients: new Matrix(augmentedMatrix.contents),
-        };
-      }
-      for (
-        let eliminationRow = sourceRow + 1;
-        eliminationRow < augmentedMatrix.rows;
-        eliminationRow++
+      yield {
+        sourceRow: sourceRow,
+        targetRow: eliminationRow,
+        action: StepAction.Eliminate,
+        coefficients: augmentedMatrix.toNumbers(),
+      };
+    }
+  }
+
+  private isRowEliminated(
+    augmentedMatrix: DecimalMatrix,
+    sourceRow: number,
+    eliminationRow: number
+  ) {
+    const pivot = augmentedMatrix.get(sourceRow, sourceRow);
+    if (isNearZero(pivot.abs())) return false;
+    const mul = augmentedMatrix
+      .get(eliminationRow, sourceRow)
+      .div(pivot)
+      .negated();
+    for (
+      let columnIndex = sourceRow;
+      columnIndex < augmentedMatrix.cols;
+      columnIndex++
+    ) {
+      augmentedMatrix.set(
+        eliminationRow,
+        columnIndex,
+        augmentedMatrix
+          .get(eliminationRow, columnIndex)
+          .add(mul.mul(augmentedMatrix.get(sourceRow, columnIndex)))
+      );
+    }
+    return true;
+  }
+
+  private findPivotRow(augmentedMatrix: DecimalMatrix, sourceRow: number) {
+    let pivotRow = sourceRow;
+    for (let i = sourceRow + 1; i < augmentedMatrix.rows; i++) {
+      if (
+        augmentedMatrix
+          .get(i, sourceRow)
+          .abs()
+          .greaterThan(augmentedMatrix.get(pivotRow, sourceRow).abs())
       ) {
-        const pivot = augmentedMatrix.get(sourceRow, sourceRow);
-        if (Math.abs(pivot) < 1e-12) continue;
-        const mul = -augmentedMatrix.get(eliminationRow, sourceRow) / pivot;
-        for (
-          let columnIndex = sourceRow;
-          columnIndex < augmentedMatrix.cols;
-          columnIndex++
-        ) {
-          augmentedMatrix.set(
-            eliminationRow,
-            columnIndex,
-            augmentedMatrix.get(eliminationRow, columnIndex) +
-              mul * augmentedMatrix.get(sourceRow, columnIndex)
-          );
-        }
-        yield {
-          sourceRow,
-          targetRow: eliminationRow,
-          action: StepAction.Eliminate,
-          coefficients: new Matrix(augmentedMatrix.contents),
-        };
+        pivotRow = i;
       }
     }
-    this.lastEchelonMatrix = new Matrix(augmentedMatrix.contents);
+    return pivotRow;
   }
 
   backSubstitute(): SolutionResult {
-    if (!this.lastEchelonMatrix) {
-      throw new Error("Previous steps must be done for back substitution");
+    if (!this.matrix) {
+      throw new Error("Matrix not initialized");
     }
-    const matrix = this.lastEchelonMatrix;
-    const solutionType = this.analyzeEchelonForm(matrix);
+
+    const solutionType = this.analyzeEchelonForm(this.matrix);
     if (solutionType !== SolutionResultType.Unique) {
       return {
         result: solutionType,
@@ -80,45 +114,58 @@ export class GaussMethod implements IMethod {
             : undefined,
       };
     }
-    const roots = new Array(matrix.rows);
-    for (let row = matrix.rows - 1; row >= 0; row--) {
-      const rhs = matrix.get(row, matrix.cols - 1);
-      let sum = rhs;
-      for (let col = row + 1; col < matrix.cols - 1; col++) {
-        sum -= matrix.get(row, col) * roots[col];
-      }
-      const pivot = matrix.get(row, row);
-      if (Math.abs(pivot) < 1e-12) {
-        return { result: SolutionResultType.Infinite };
-      }
-      roots[row] = sum / pivot;
-    }
-    return { result: SolutionResultType.Unique, roots };
+
+    const roots = this.solveUpperTriangular(this.matrix);
+    return {
+      result: SolutionResultType.Unique,
+      roots: roots.map((r) => r.toNumber()),
+    };
   }
 
-  private analyzeEchelonForm(matrix: Matrix): SolutionResultType {
+  private solveUpperTriangular(matrix: DecimalMatrix): Decimal[] {
+    const roots = new Array<Decimal>(matrix.rows);
+
+    for (let row = matrix.rows - 1; row >= 0; row--) {
+      let sum = matrix.get(row, matrix.cols - 1); // RHS value
+
+      for (let col = row + 1; col < matrix.cols - 1; col++) {
+        const coeff = matrix.get(row, col);
+        sum = sum.sub(coeff.mul(roots[col]));
+      }
+
+      const pivot = matrix.get(row, row);
+      if (isNearZero(pivot)) {
+        throw new Error("Unexpected zero pivot during back-substitution");
+      }
+
+      roots[row] = sum.div(pivot);
+    }
+
+    return roots;
+  }
+
+  private analyzeEchelonForm(matrix: DecimalMatrix): SolutionResultType {
+    let rank = 0;
     const rows = matrix.rows;
     const cols = matrix.cols - 1;
-    let rank = 0;
+
     for (let row = 0; row < rows; row++) {
-      let allZero = true;
-      for (let col = 0; col < cols; col++) {
-        if (Math.abs(matrix.get(row, col)) > 1e-12) {
-          allZero = false;
-          break;
-        }
-      }
+      const isZeroRow = this.isZeroRow(matrix, row, cols);
       const rhs = matrix.get(row, matrix.cols - 1);
-      if (allZero && Math.abs(rhs) > 1e-12) {
-        return SolutionResultType.None;
-      }
-      if (!allZero) {
-        rank++;
-      }
+
+      if (isZeroRow && !isNearZero(rhs)) return SolutionResultType.None;
+      if (!isZeroRow) rank++;
     }
-    if (rank < cols) {
-      return SolutionResultType.Infinite;
+
+    return rank < cols
+      ? SolutionResultType.Infinite
+      : SolutionResultType.Unique;
+  }
+
+  private isZeroRow(matrix: DecimalMatrix, row: number, cols: number): boolean {
+    for (let col = 0; col < cols; col++) {
+      if (!isNearZero(matrix.get(row, col))) return false;
     }
-    return SolutionResultType.Unique;
+    return true;
   }
 }

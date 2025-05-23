@@ -1,15 +1,16 @@
-import { Matrix } from "../Matrix";
+import { Matrix } from "../math/Matrix";
 import type { Step } from "../steps/Step";
 import type { IMethod } from "./IMethod";
 import type { SolutionResult } from "../solution/SolutionResult";
+import { Method } from "./Method";
+import type { DecimalMatrix } from "../math/DecimalMatrix";
 
 // MatrixMethod stub in TypeScript
-export class MatrixMethod implements IMethod {
-  backSubstitute(): SolutionResult {
-    throw new Error("Not implemented");
+export class MatrixMethod extends Method {
+  getForwardSteps(matrix: DecimalMatrix): IterableIterator<Step> {
+    throw new Error("Method not implemented.");
   }
-
-  *getForwardSteps(matrix: Matrix): IterableIterator<Step> {
+  backSubstitute(): SolutionResult {
     throw new Error("Not implemented");
   }
 }
