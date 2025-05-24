@@ -22,8 +22,8 @@ export class Matrix<T> {
     }
   }
 
-  get(x: number, y: number): T {
-    return this.contents[x][y];
+  get(row: number, col: number): T {
+    return this.contents[row][col];
   }
 
   set(x: number, y: number, value: T): void {

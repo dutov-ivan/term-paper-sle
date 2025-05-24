@@ -1,11 +1,5 @@
 import { create } from "zustand";
 
-function generateRandomMatrix(size: number): number[][] {
-  return Array.from({ length: size }, () =>
-    Array.from({ length: size + 1 }, () => Math.floor(Math.random() * 100))
-  );
-}
-
 type MatrixState = {
   matrix: number[][];
   isLoadingMatrix: boolean;
@@ -13,7 +7,6 @@ type MatrixState = {
   setSize: (newSize: number) => void;
 
   setMatrix: (matrix: number[][]) => void;
-  setRandomMatrix: () => void;
   setIsLoadingMatrix: (isLoading: boolean) => void;
   setCell: (row: number, col: number, value: number) => void;
   getCell: (row: number, col: number) => number;
@@ -44,14 +37,6 @@ export const useMatrixStore = create<MatrixState>((set, get) => ({
   },
   setMatrix: (matrix) => {
     set({ matrix });
-  },
-  setRandomMatrix: () => {
-    set((state) => {
-      const size = state.size;
-      if (size <= 0) return { isLoadingMatrix: false };
-      const randomMatrix = generateRandomMatrix(size);
-      return { matrix: randomMatrix, isLoadingMatrix: false };
-    });
   },
   setIsLoadingMatrix: (isLoading) => set({ isLoadingMatrix: isLoading }),
 

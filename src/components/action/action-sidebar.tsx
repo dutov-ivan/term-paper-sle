@@ -5,158 +5,150 @@ import { ArrowLeft, ArrowRight, UndoDot } from "lucide-react";
 import { toast } from "sonner";
 import { useMatrixStore } from "@/store/matrix";
 import { useSolutionStore } from "@/store/solution";
-import { StepAction } from "@/lib/steps/StepAction";
+import { Card } from "../ui/card";
+import { Slider } from "../ui/slider";
 
-function ActionSidebar() {
+// Custom hook for interval
+function useInterval(callback: () => void, delay: number | null) {
+  const savedCallback = useRef<() => void>(callback);
+
+  // Remember latest callback
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  // Set up interval
+  useEffect(() => {
+    if (delay === null) return;
+    const id = setInterval(() => savedCallback.current(), delay);
+    return () => clearInterval(id);
+  }, [delay]);
+}
+
+export default function ActionSidebar() {
   const [steps, setSteps] = useState<Step[]>([]);
-  const [currentStepIndex, setCurrentStepIndex] = useState(-1);
-  const [isStarted, setIsRunning] = useState(false);
-  const matrix = useMatrixStore((state) => state.matrix);
-  const [startingMatrix, setStartingMatrix] = useState<number[][] | null>(
-    matrix
-  );
-  console.log(matrix);
+  const [index, setIndex] = useState(-1);
+  const [isRunning, setRunning] = useState(false);
+  const [speed, setSpeed] = useState(500);
 
-  const setMatrix = useMatrixStore((state) => state.setMatrix);
-  const method = useSolutionStore((state) => state.method);
-  const setResult = useSolutionStore((state) => state.setSolutionResult);
+  const matrix = useMatrixStore((s) => s.matrix);
+  const setMatrix = useMatrixStore((s) => s.setMatrix);
+  const method = useSolutionStore((s) => s.method);
+  const setResult = useSolutionStore((s) => s.setSolutionResult);
 
   const iteratorRef = useRef<Iterator<Step> | null>(null);
+  const startingMatrixRef = useRef<number[][]>(matrix.map((r) => [...r]));
 
+  // Initialize iterator when method changes
   useEffect(() => {
     if (!method) return;
     iteratorRef.current = method.run(matrix);
+    startingMatrixRef.current = matrix.map((r) => [...r]);
+    setSteps([]);
+    setIndex(-1);
+    setRunning(false);
   }, [method]);
 
-  const handleStart = () => {
-    setIsRunning(true);
-    setStartingMatrix(matrix.map((row) => [...row]));
-  };
-  const handleStop = () => {
-    setIsRunning(false);
-  };
+  const forwardOne = React.useCallback(() => {
+    if (!iteratorRef.current) return;
 
-  const handleReset = () => {
-    if (!method) {
-      toast.error("Please select a method first.");
+    // Next from history
+    if (index + 1 < steps.length) {
+      const step = steps[index + 1];
+      setMatrix(step.coefficients);
+      setIndex((i) => i + 1);
       return;
     }
 
-    if (!iteratorRef.current) return;
+    // Pull new step
+    const next = iteratorRef.current.next();
+    if (next.done) {
+      setRunning(false);
+      const result = method?.backSubstitute() ?? null;
+      setResult(result);
+      toast.success("Reached the end!");
+      return;
+    }
 
-    setIsRunning(false);
+    setSteps((prev) => [...prev, next.value]);
+    setIndex((i) => i + 1);
+    setMatrix(next.value.coefficients);
+  }, [index, steps, setMatrix, setResult, method]);
+
+  const backwardOne = () => {
+    if (index < 0) return toast.error("No more steps to go back.");
+    setIndex((i) => i - 1);
+    setMatrix(steps[index].coefficients);
+  };
+
+  const handleStart = () => {
+    if (!method) return toast.error("Select a method first.");
+    setRunning(true);
+  };
+
+  const handleStop = () => setRunning(false);
+  const handleReset = () => {
+    if (!method) return toast.error("Select a method first.");
+    setRunning(false);
     setSteps([]);
-    setCurrentStepIndex(-1);
-    setMatrix(startingMatrix!.map((row) => [...row]));
+    setIndex(-1);
+    setMatrix(startingMatrixRef.current);
     setResult(null);
-
     iteratorRef.current = method.getForwardSteps();
   };
 
-  const forwardOne = () => {
-    if (!isStarted) {
-      toast.error("Please start the process first.");
-      return;
-    }
-
-    if (!method) {
-      toast.error("Please select a method first.");
-      return;
-    }
-
-    if (!iteratorRef.current) return;
-
-    if (currentStepIndex + 1 < steps.length) {
-      const step = steps[currentStepIndex + 1];
-      setMatrix([...step.coefficients]);
-      setCurrentStepIndex((prev) => prev + 1);
-    } else {
-      const nextStep = iteratorRef.current.next();
-      if (nextStep.done) {
-        setIsRunning(false);
-        toast.success("Hooray! You have reached the end of the steps.");
-        const result = method.backSubstitute();
-        setResult(result);
-        return;
-      }
-      const step = nextStep.value;
-      setSteps((prev) => [...prev, step]);
-      setCurrentStepIndex((prev) => prev + 1);
-      setMatrix([...step.coefficients]);
-    }
-  };
-
-  const backwardOne = () => {
-    if (!isStarted) {
-      toast.error("Please start the process first.");
-      return;
-    }
-    if (steps.length === 0) {
-      toast.error("No more steps to go back.");
-      return;
-    }
-    const lastStep = steps[steps.length - 1];
-    setMatrix([...lastStep.coefficients]);
-    setSteps((prev) => prev.slice(0, prev.length - 1));
-    setCurrentStepIndex((prev) => prev - 1);
-  };
-
-  const isNoStepsDone = steps.length === 0;
-  const isLastPossibleStep =
-    steps.length !== 0 && steps[steps.length - 1].action === StepAction.Done;
-  const isMatrixEmpty = matrix.length === 0;
+  // Use interval for auto-stepping
+  useInterval(
+    () => {
+      if (isRunning) forwardOne();
+    },
+    isRunning ? speed : null
+  );
 
   return (
     <div>
       <div className="flex gap-4 mb-4 items-center">
-        {isStarted ? (
+        {isRunning ? (
           <Button onClick={handleStop}>Stop</Button>
         ) : (
-          <Button disabled={isMatrixEmpty} onClick={handleStart}>
+          <Button disabled={!method} onClick={handleStart}>
             Start
           </Button>
         )}
-        <div className="flex gap-2">
-          <Button
-            disabled={isNoStepsDone}
-            onClick={backwardOne}
-            variant="outline"
-          >
-            <ArrowLeft />
-          </Button>
-          <Button
-            disabled={!isStarted || isLastPossibleStep}
-            variant="outline"
-            onClick={forwardOne}
-          >
-            <ArrowRight />
-          </Button>
-        </div>
 
-        <Button
-          disabled={!isStarted && steps.length === 0}
-          onClick={handleReset}
-          variant="outline"
-        >
+        <Button onClick={backwardOne} disabled={index < 0} variant="outline">
+          <ArrowLeft />
+        </Button>
+        <Button onClick={forwardOne} disabled={!isRunning} variant="outline">
+          <ArrowRight />
+        </Button>
+
+        <Button onClick={handleReset} variant="outline">
           Reset <UndoDot />
         </Button>
+
+        <Card className="w-full p-2">
+          <div className="flex items-center justify-between">
+            <span>Speed: {speed}ms per step</span>
+            <Slider
+              value={[speed]}
+              min={100}
+              max={2000}
+              step={100}
+              onValueChange={([val]) => setSpeed(val)}
+            />
+          </div>
+        </Card>
       </div>
+
       <h1>Action list</h1>
       <div className="flex flex-col gap-2">
-        {Array.from({ length: currentStepIndex + 1 }, (_, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between p-2 border rounded-md"
-          >
-            <span>
-              From {steps[index].sourceRow} to {steps[index].targetRow} doing{" "}
-              {steps[index].action}
-            </span>
+        {steps.slice(0, index + 1).map((s, i) => (
+          <div key={i} className="p-2 border rounded-md">
+            From {s.sourceRow} to {s.targetRow} — {s.action}
           </div>
         ))}
       </div>
     </div>
   );
 }
-
-export default ActionSidebar;

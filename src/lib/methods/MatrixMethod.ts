@@ -7,7 +7,7 @@ import type { DecimalMatrix } from "../math/DecimalMatrix";
 
 // MatrixMethod stub in TypeScript
 export class MatrixMethod extends Method {
-  getForwardSteps(matrix: DecimalMatrix): IterableIterator<Step> {
+  getForwardSteps(): IterableIterator<Step> {
     throw new Error("Method not implemented.");
   }
   backSubstitute(): SolutionResult {
