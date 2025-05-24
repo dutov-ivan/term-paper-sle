@@ -1,0 +1,34 @@
+import AppMenubar from "@/components/app-menubar";
+import SolutionDisplay from "@/components/solution/solution-display.tsx";
+import SolutionPreferences from "@/components/solution/solution-preferences";
+import ActionSidebar from "@/components/action/action-sidebar";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+
+const SolutionMode = () => {
+  return (
+    <ResizablePanelGroup direction="horizontal">
+      <ResizablePanel defaultSize={66} minSize={40}>
+        <div className="flex flex-col gap-8 h-screen p-4">
+          <div className="inline-flex">
+            <AppMenubar />
+          </div>
+
+          <SolutionPreferences />
+          <SolutionDisplay />
+        </div>
+      </ResizablePanel>
+      <ResizableHandle />
+      <ResizablePanel defaultSize={34} minSize={16}>
+        <div className="h-full p-4">
+          <ActionSidebar />
+        </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  );
+};
+
+export default SolutionMode;

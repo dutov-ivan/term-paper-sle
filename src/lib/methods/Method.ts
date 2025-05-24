@@ -11,21 +11,21 @@ export abstract class Method implements IMethod {
   protected _elementaryOperations: number = 0;
 
   public get iterations(): number {
-    return this.iterations;
+    return this._iterations;
   }
 
   public get elementaryOperations(): number {
-    return this.elementaryOperations;
+    return this._elementaryOperations;
   }
 
   protected matrix: DecimalMatrix | null = null;
 
-  public run(matrix: number[][]): IterableIterator<Step> {
+  public run(matrix: DecimalMatrix): IterableIterator<Step> {
     if (this.matrix) {
       this._iterations = 0;
       this._elementaryOperations = 0;
     }
-    this.matrix = DecimalMatrix.fromNumbers(matrix);
+    this.matrix = matrix;
     return this.getForwardSteps();
   }
 }

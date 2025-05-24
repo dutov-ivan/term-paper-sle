@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import MatrixLoadingDialog from "./matrix-upload-dialog";
 import { useImportModals } from "@/store/importModals";
+import { useModeStore } from "@/store/mode";
 
 type Themes = {
   label: string;
@@ -23,6 +24,7 @@ type Themes = {
 const AppMenubar = () => {
   const importModal = useImportModals((state) => state.openedModal);
   const setImportModal = useImportModals((state) => state.setModal);
+  const setAppMode = useModeStore((state) => state.setMode);
   const { theme, setTheme } = useTheme();
   const { t } = useLingui();
   const themes: Themes = [
@@ -110,6 +112,17 @@ const AppMenubar = () => {
                 {value}
               </MenubarItem>
             ))}
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger>Mode</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onSelect={() => setAppMode("graphs")}>
+              Graphing
+            </MenubarItem>
+            <MenubarItem onSelect={() => setAppMode("solution")}>
+              Solution
+            </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
       </Menubar>

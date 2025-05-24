@@ -1,9 +1,17 @@
-import { StepAction } from "@/lib/steps/StepAction.ts";
+import type { DecimalMatrix } from "../math/DecimalMatrix";
 
-// Step record in TypeScript
-export interface Step {
-  sourceRow: number;
-  targetRow: number;
-  action: StepAction;
-  coefficients: number[][];
+export abstract class Step {
+  constructor(sourceRow: number, targetRow: number) {
+    this.sourceRow = sourceRow;
+    this.targetRow = targetRow;
+  }
+
+  protected sourceRow: number;
+  protected targetRow: number;
+  abstract perform(matrix: DecimalMatrix): boolean;
+
+  abstract inverse(matrix: number[][]): number[][];
+  print(): string {
+    return `From ${this.sourceRow} to ${this.targetRow} — ${this.constructor.name}`;
+  }
 }

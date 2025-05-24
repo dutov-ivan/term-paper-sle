@@ -37,3 +37,9 @@ export class Matrix<T> {
     ];
   }
 }
+
+export function generateRandomMatrix(size: number): number[][] {
+  return Array.from({ length: size }, () =>
+    Array.from({ length: size + 1 }, () => Math.floor(Math.random() * 100))
+  );
+}

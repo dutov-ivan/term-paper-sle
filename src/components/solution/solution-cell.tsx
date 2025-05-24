@@ -7,7 +7,7 @@ interface SolutionCellProps {
   rowIndex: number;
   columnIndex: number;
   rowLength: number;
-  contents: number;
+  contents: string;
 }
 
 function SolutionCell({
@@ -21,8 +21,8 @@ function SolutionCell({
   const setContents = useMatrixStore((state) => state.setCell);
 
   const { value, onChange: onValueChange } = useSafeNumericInput(
-    contents,
-    (num) => setContents(rowIndex, columnIndex, num)
+    Number(contents),
+    (num) => setContents(rowIndex, columnIndex, num.toString())
   );
 
   const charCount = value.length > 0 ? value.length : 1;

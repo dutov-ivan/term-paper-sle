@@ -1,11 +1,12 @@
 import type { Step } from "../steps/Step";
 import type { SolutionResult } from "../solution/SolutionResult";
 import { SolutionResultType } from "../solution/SolutionResultType";
-import { StepAction } from "../steps/StepAction";
 import { DecimalMatrix } from "../math/DecimalMatrix";
 import type Decimal from "decimal.js";
 import { Method } from "./Method";
 import { isNearZero } from "../math/utils";
+import { StepSwapRows } from "../steps/StepSwapRows";
+import { StepEliminate } from "../steps/StepEliminate";
 
 export class GaussMethod extends Method {
   *getForwardSteps(): IterableIterator<Step> {
@@ -27,12 +28,10 @@ export class GaussMethod extends Method {
     }
     if (pivotRow !== sourceRow) {
       augmentedMatrix.swapRows(sourceRow, pivotRow);
-      yield {
-        sourceRow: sourceRow,
-        targetRow: pivotRow,
-        action: StepAction.SwapRows,
-        coefficients: augmentedMatrix.toNumbers(),
-      };
+      this._elementaryOperations++;
+      const step = new StepSwapRows(sourceRow, pivotRow);
+      step.perform(augmentedMatrix);
+      yield step;
     }
   }
 
@@ -45,43 +44,13 @@ export class GaussMethod extends Method {
       eliminationRow < augmentedMatrix.rows;
       eliminationRow++
     ) {
-      if (!this.isRowEliminated(augmentedMatrix, sourceRow, eliminationRow)) {
+      const step = new StepEliminate(sourceRow, eliminationRow);
+      if (!step.perform(augmentedMatrix)) {
         continue;
       }
-      yield {
-        sourceRow: sourceRow,
-        targetRow: eliminationRow,
-        action: StepAction.Eliminate,
-        coefficients: augmentedMatrix.toNumbers(),
-      };
+      this._elementaryOperations++;
+      yield step;
     }
-  }
-
-  private isRowEliminated(
-    augmentedMatrix: DecimalMatrix,
-    sourceRow: number,
-    eliminationRow: number
-  ) {
-    const pivot = augmentedMatrix.get(sourceRow, sourceRow);
-    if (isNearZero(pivot.abs())) return false;
-    const mul = augmentedMatrix
-      .get(eliminationRow, sourceRow)
-      .div(pivot)
-      .negated();
-    for (
-      let columnIndex = sourceRow;
-      columnIndex < augmentedMatrix.cols;
-      columnIndex++
-    ) {
-      augmentedMatrix.set(
-        eliminationRow,
-        columnIndex,
-        augmentedMatrix
-          .get(eliminationRow, columnIndex)
-          .add(mul.mul(augmentedMatrix.get(sourceRow, columnIndex)))
-      );
-    }
-    return true;
   }
 
   private findPivotRow(augmentedMatrix: DecimalMatrix, sourceRow: number) {

@@ -1,55 +1,88 @@
+import { DecimalMatrix } from "@/lib/math/DecimalMatrix";
+import type { Step } from "@/lib/steps/Step";
+import Decimal from "decimal.js";
+import type { string } from "zod";
 import { create } from "zustand";
 
 type MatrixState = {
-  matrix: number[][];
+  decimalMatrix: DecimalMatrix;
   isLoadingMatrix: boolean;
   size: number;
-  setSize: (newSize: number) => void;
 
-  setMatrix: (matrix: number[][]) => void;
+  resize: (newSize: number) => void;
   setIsLoadingMatrix: (isLoading: boolean) => void;
-  setCell: (row: number, col: number, value: number) => void;
-  getCell: (row: number, col: number) => number;
+  getCellString: (row: number, col: number) => string;
+  setCell: (row: number, col: number, value: string) => void;
+  getStringMatrix: () => string[][];
+
+  executeStep: (step: Step) => void;
+  setDecimalMatrix: (dm: DecimalMatrix) => void;
+  stringCache: Map<string, string>;
+  version: number;
 };
 
 export const useMatrixStore = create<MatrixState>((set, get) => ({
-  matrix: [],
+  decimalMatrix: new DecimalMatrix(0, 0),
   isLoadingMatrix: false,
   size: 0,
-  setSize: (newSize: number) => {
-    set((state) => {
-      const oldMatrix = state.matrix;
-      const rows = Array.from({ length: newSize }, (_, i) => {
-        if (i < oldMatrix.length) {
-          const oldRow = oldMatrix[i];
-          if (oldRow.length === newSize + 1) return oldRow;
-          if (oldRow.length < newSize + 1) {
-            return [...oldRow, ...Array(newSize + 1 - oldRow.length).fill(0)];
-          } else {
-            return oldRow.slice(0, newSize + 1);
-          }
-        } else {
-          return Array(newSize + 1).fill(0);
-        }
-      });
-      return { matrix: rows, size: newSize, isLoadingMatrix: false };
+  version: 0,
+
+  resize: (newSize) => {
+    const newDecimalMatrix = new DecimalMatrix(newSize, newSize + 1);
+    set({
+      size: newSize,
+      decimalMatrix: newDecimalMatrix,
     });
   },
-  setMatrix: (matrix) => {
-    set({ matrix });
-  },
+
   setIsLoadingMatrix: (isLoading) => set({ isLoadingMatrix: isLoading }),
+
+  getStringMatrix: () => {
+    const { decimalMatrix, size } = get();
+    return Array.from({ length: size }, (_, i) =>
+      Array.from({ length: size + 1 }, (_, j) =>
+        decimalMatrix.get(i, j).toString()
+      )
+    );
+  },
+
+  setDecimalMatrix: (dm) =>
+    set((state) => ({
+      decimalMatrix: dm,
+      version: state.version + 1,
+      stringCache: new Map(),
+      size: dm.rows,
+    })),
+  stringCache: new Map(),
 
   setCell: (row, col, value) => {
     set((state) => {
-      if (state.matrix[row][col] === value) return state; // No update if value is the same
-      const newRow = [...state.matrix[row]];
-      newRow[col] = value;
-      const newMatrix = [...state.matrix];
-      newMatrix[row] = newRow;
-      return { matrix: newMatrix };
+      state.decimalMatrix.set(row, col, new Decimal(value));
+      const key = `${row},${col}`;
+      state.stringCache.set(key, value);
+      return {
+        version: state.version + 1,
+      };
     });
   },
 
-  getCell: (row, col) => get().matrix[row][col],
+  getCellString: (row, col) => {
+    const key = `${row},${col}`;
+    const cache = get().stringCache;
+    if (cache.has(key)) return cache.get(key)!;
+
+    const val = get().decimalMatrix.get(row, col).toString();
+    cache.set(key, val);
+    return val;
+  },
+
+  executeStep: (step) => {
+    set((state) => {
+      step.perform(state.decimalMatrix);
+      state.stringCache.clear();
+      return {
+        version: state.version + 1,
+      };
+    });
+  },
 }));

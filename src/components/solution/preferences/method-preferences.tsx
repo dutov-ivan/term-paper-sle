@@ -12,16 +12,7 @@ import { Label } from "@/components/ui/label.tsx";
 import { getMethodTypeFromClass, MethodType } from "@/lib/methods/IMethod.ts";
 import { useSolutionStore } from "@/store/solution";
 import { useEffect, useState } from "react";
-
-type MethodsDropdown = {
-  [K in MethodType]: string;
-};
-
-const methodsDropdown: MethodsDropdown = {
-  Gauss: "Gauss",
-  GaussJordan: "Gauss-Jordan",
-  InverseMatrix: "Inverse Matrix",
-};
+import { methodToString } from "./method";
 
 const MethodPreferences = () => {
   const solutionMethod = useSolutionStore((state) => state.method);
@@ -52,7 +43,7 @@ const MethodPreferences = () => {
         <SelectContent>
           <SelectGroup>
             <SelectLabel>Method</SelectLabel>
-            {Object.entries(methodsDropdown).map(([key, value]) => (
+            {Object.entries(methodToString).map(([key, value]) => (
               <SelectItem value={key} key={key}>
                 {value}
               </SelectItem>

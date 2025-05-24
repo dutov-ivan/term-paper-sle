@@ -4,6 +4,7 @@ import {
   type MethodType,
 } from "@/lib/methods/IMethod";
 import type { SolutionResult } from "@/lib/solution/SolutionResult";
+import type { Step } from "@/lib/steps/Step";
 import { create } from "zustand";
 
 type SolutionState = {

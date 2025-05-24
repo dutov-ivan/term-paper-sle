@@ -2,10 +2,12 @@ import Decimal from "decimal.js";
 import type { DecimalMatrix } from "../math/DecimalMatrix";
 import { isNearZero } from "../math/utils";
 import type { Step } from "../steps/Step";
-import { StepAction } from "../steps/StepAction";
 import { Method } from "./Method";
 import type { SolutionResult } from "../solution/SolutionResult";
 import { SolutionResultType } from "../solution/SolutionResultType";
+import { StepEliminate } from "../steps/StepEliminate";
+import { StepSwapRows } from "../steps/StepSwapRows";
+import { StepScale } from "../steps/StepScale";
 
 export class JordanGaussMethod extends Method {
   *getForwardSteps(): IterableIterator<Step> {
@@ -37,36 +39,20 @@ export class JordanGaussMethod extends Method {
       return;
     }
     if (pivotRow !== sourceRow) {
-      augmentedMatrix.swapRows(sourceRow, pivotRow);
-      yield {
-        sourceRow: sourceRow,
-        targetRow: pivotRow,
-        action: StepAction.SwapRows,
-        coefficients: augmentedMatrix.toNumbers(),
-      };
+      const step = new StepSwapRows(sourceRow, pivotRow);
+      step.perform(augmentedMatrix);
+      this._elementaryOperations++;
+      yield step;
     }
   }
 
   private *performScaling(augmentedMatrix: DecimalMatrix, sourceRow: number) {
-    const pivot = augmentedMatrix.get(sourceRow, sourceRow);
-    if (isNearZero(pivot.abs())) return;
-    for (
-      let columnIndex = sourceRow;
-      columnIndex < augmentedMatrix.cols;
-      columnIndex++
-    ) {
-      augmentedMatrix.set(
-        sourceRow,
-        columnIndex,
-        augmentedMatrix.get(sourceRow, columnIndex).div(pivot)
-      );
+    const step = new StepScale(sourceRow);
+    if (!step.perform(augmentedMatrix)) {
+      return;
     }
-    yield {
-      sourceRow: sourceRow,
-      targetRow: sourceRow,
-      action: StepAction.Scale,
-      coefficients: augmentedMatrix.toNumbers(),
-    };
+    this._elementaryOperations++;
+    yield step;
   }
 
   private *performElimination(
@@ -83,41 +69,13 @@ export class JordanGaussMethod extends Method {
       eliminationRow !== end;
       eliminationRow += step
     ) {
-      if (!this.eliminateRow(augmentedMatrix, sourceRow, eliminationRow)) {
-        return;
+      const eliminationStep = new StepEliminate(sourceRow, eliminationRow);
+      if (!eliminationStep.perform(augmentedMatrix)) {
+        continue;
       }
-      yield {
-        sourceRow: sourceRow,
-        targetRow: eliminationRow,
-        action: StepAction.Eliminate,
-        coefficients: augmentedMatrix.toNumbers(),
-      };
+      this._elementaryOperations++;
+      yield eliminationStep;
     }
-  }
-
-  private eliminateRow(
-    augmentedMatrix: DecimalMatrix,
-    sourceRow: number,
-    targetRow: number
-  ): boolean {
-    const pivot = augmentedMatrix.get(sourceRow, sourceRow);
-    if (isNearZero(pivot.abs())) return false;
-
-    const multiplier = augmentedMatrix
-      .get(targetRow, sourceRow)
-      .div(pivot)
-      .negated();
-
-    for (let col = sourceRow; col < augmentedMatrix.cols; col++) {
-      const value = augmentedMatrix
-        .get(targetRow, col)
-        .add(multiplier.mul(augmentedMatrix.get(sourceRow, col)));
-      augmentedMatrix.set(targetRow, col, value);
-    }
-
-    augmentedMatrix.set(targetRow, sourceRow, new Decimal(0));
-
-    return true;
   }
 
   private findPivotRow(augmentedMatrix: DecimalMatrix, sourceRow: number) {

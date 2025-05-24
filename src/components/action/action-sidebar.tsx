@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { Step } from "@/lib/steps/Step.ts";
 import { Button } from "../ui/button";
-import { ArrowLeft, ArrowRight, UndoDot } from "lucide-react";
+import { ArrowLeft, ArrowRight, Goal, UndoDot } from "lucide-react";
 import { toast } from "sonner";
 import { useMatrixStore } from "@/store/matrix";
 import { useSolutionStore } from "@/store/solution";
 import { Card } from "../ui/card";
 import { Slider } from "../ui/slider";
+import { DecimalMatrix } from "@/lib/math/DecimalMatrix";
+import Decimal from "decimal.js";
 
 // Custom hook for interval
 function useInterval(callback: () => void, delay: number | null) {
@@ -31,23 +33,28 @@ export default function ActionSidebar() {
   const [isRunning, setRunning] = useState(false);
   const [speed, setSpeed] = useState(500);
 
-  const matrix = useMatrixStore((s) => s.matrix);
-  const setMatrix = useMatrixStore((s) => s.setMatrix);
+  const decimalMatrix = useMatrixStore((s) => s.decimalMatrix);
+  const setDecimalMatrix = useMatrixStore((s) => s.setDecimalMatrix);
+
   const method = useSolutionStore((s) => s.method);
   const setResult = useSolutionStore((s) => s.setSolutionResult);
 
   const iteratorRef = useRef<Iterator<Step> | null>(null);
-  const startingMatrixRef = useRef<number[][]>(matrix.map((r) => [...r]));
+  const startingMatrixRef = useRef<string[][]>(decimalMatrix.toNumbers());
 
-  // Initialize iterator when method changes
   useEffect(() => {
     if (!method) return;
-    iteratorRef.current = method.run(matrix);
-    startingMatrixRef.current = matrix.map((r) => [...r]);
+    iteratorRef.current = method.run(decimalMatrix);
+    startingMatrixRef.current = decimalMatrix.toNumbers();
     setSteps([]);
     setIndex(-1);
     setRunning(false);
   }, [method]);
+
+  const executeStep = (step: Step) => {
+    step.perform(decimalMatrix);
+    setDecimalMatrix(decimalMatrix);
+  };
 
   const forwardOne = React.useCallback(() => {
     if (!iteratorRef.current) return;
@@ -55,7 +62,7 @@ export default function ActionSidebar() {
     // Next from history
     if (index + 1 < steps.length) {
       const step = steps[index + 1];
-      setMatrix(step.coefficients);
+      executeStep(step);
       setIndex((i) => i + 1);
       return;
     }
@@ -72,13 +79,52 @@ export default function ActionSidebar() {
 
     setSteps((prev) => [...prev, next.value]);
     setIndex((i) => i + 1);
-    setMatrix(next.value.coefficients);
-  }, [index, steps, setMatrix, setResult, method]);
+    const step = next.value;
+    step.perform(decimalMatrix);
+    setDecimalMatrix(decimalMatrix);
+  }, [index, steps, setDecimalMatrix, setResult, method, decimalMatrix]);
 
   const backwardOne = () => {
     if (index < 0) return toast.error("No more steps to go back.");
     setIndex((i) => i - 1);
-    setMatrix(steps[index].coefficients);
+    // TODO: Window for matrix state, instead of just the last step
+    throw new Error("Not implemented: Step inverse logic");
+    // const previousMatrix = step.inverse(matrix);
+    // setMatrix(previousMatrix);
+  };
+
+  const skipAndFinish = () => {
+    if (!method || !iteratorRef.current)
+      return toast.error("Select a method first.");
+    setRunning(false);
+
+    const newSteps = [...steps];
+    let result = iteratorRef.current.next();
+
+    while (!result.done) {
+      newSteps.push(result.value);
+      result = iteratorRef.current.next();
+    }
+
+    if (newSteps.length === 0) {
+      toast.error("No steps were generated.");
+      return;
+    }
+
+    setSteps(newSteps);
+
+    for (let i = index + 1; i < newSteps.length; i++) {
+      newSteps[i].perform(decimalMatrix);
+      setDecimalMatrix(decimalMatrix);
+    }
+
+    setDecimalMatrix(decimalMatrix);
+    setIndex(newSteps.length - 1);
+
+    const finalResult = method.backSubstitute();
+    setResult(finalResult);
+
+    toast.success("Reached the end!");
   };
 
   const handleStart = () => {
@@ -92,12 +138,28 @@ export default function ActionSidebar() {
     setRunning(false);
     setSteps([]);
     setIndex(-1);
-    setMatrix(startingMatrixRef.current);
     setResult(null);
-    iteratorRef.current = method.getForwardSteps();
+
+    setDecimalMatrix(DecimalMatrix.fromNumbers(startingMatrixRef.current));
+
+    const newDecimalMatrix = new DecimalMatrix(
+      startingMatrixRef.current.length,
+      startingMatrixRef.current[0].length
+    );
+    for (let i = 0; i < startingMatrixRef.current.length; i++) {
+      for (let j = 0; j < startingMatrixRef.current[i].length; j++) {
+        newDecimalMatrix.set(
+          i,
+          j,
+          new Decimal(startingMatrixRef.current[i][j])
+        );
+      }
+    }
+
+    setDecimalMatrix(newDecimalMatrix);
+    iteratorRef.current = method.run(newDecimalMatrix);
   };
 
-  // Use interval for auto-stepping
   useInterval(
     () => {
       if (isRunning) forwardOne();
@@ -128,24 +190,27 @@ export default function ActionSidebar() {
         </Button>
 
         <Card className="w-full p-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 items-center justify-between">
             <span>Speed: {speed}ms per step</span>
             <Slider
               value={[speed]}
-              min={100}
-              max={2000}
-              step={100}
+              min={10}
+              max={300}
+              step={10}
               onValueChange={([val]) => setSpeed(val)}
             />
           </div>
         </Card>
+        <Button onClick={skipAndFinish}>
+          <Goal />
+        </Button>
       </div>
 
       <h1>Action list</h1>
       <div className="flex flex-col gap-2">
         {steps.slice(0, index + 1).map((s, i) => (
           <div key={i} className="p-2 border rounded-md">
-            From {s.sourceRow} to {s.targetRow} — {s.action}
+            {s.print()}
           </div>
         ))}
       </div>

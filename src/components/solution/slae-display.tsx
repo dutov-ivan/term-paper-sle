@@ -7,10 +7,12 @@ import { useMatrixStore } from "@/store/matrix";
 
 const SlaeDisplay = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const matrix = useMatrixStore((state) => state.matrix);
-  const rows = matrix.length;
-  const columns = rows === 0 ? 0 : matrix[0].length;
+  const size = useMatrixStore((state) => state.size);
+  const rows = size;
+  const columns = rows === 0 ? 0 : size + 1;
+  const matrix = useMatrixStore((state) => state.decimalMatrix);
   const isLoadingMatrix = useMatrixStore((state) => state.isLoadingMatrix);
+  const getCellString = useMatrixStore((state) => state.getCellString);
 
   // Horizontal column virtualizer
   const columnVirtualizer = useVirtualizer({
@@ -93,7 +95,7 @@ const SlaeDisplay = () => {
                   />
                 ) : (
                   <SolutionCell
-                    contents={matrix[row.index][column.index]}
+                    contents={getCellString(row.index, column.index)}
                     rowIndex={row.index}
                     columnIndex={column.index}
                     rowLength={columns}

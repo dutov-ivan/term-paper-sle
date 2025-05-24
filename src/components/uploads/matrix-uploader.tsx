@@ -5,7 +5,7 @@ import { useMatrixStore } from "@/store/matrix";
 
 const MatrixUploader = ({ type }: { type: MatrixLoadingDialogType }) => {
   const setMatrix = useMatrixStore((state) => state.setMatrix);
-  const setSize = useMatrixStore((state) => state.setSize);
+  const setSize = useMatrixStore((state) => state.resize);
   console.log("Set matrix", setMatrix);
   switch (type) {
     case "CSV":

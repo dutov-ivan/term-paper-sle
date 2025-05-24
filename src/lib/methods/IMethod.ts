@@ -42,5 +42,5 @@ export const getMethodTypeFromClass = (method: IMethod): MethodType => {
 export interface IMethod {
   getForwardSteps(): IterableIterator<Step>;
   backSubstitute(): SolutionResult;
-  run(matrix: number[][]): IterableIterator<Step>;
+  run(matrix: DecimalMatrix): IterableIterator<Step>;
 }
