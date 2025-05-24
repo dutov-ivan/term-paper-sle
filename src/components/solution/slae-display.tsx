@@ -10,9 +10,8 @@ const SlaeDisplay = () => {
   const size = useMatrixStore((state) => state.size);
   const rows = size;
   const columns = rows === 0 ? 0 : size + 1;
-  const matrix = useMatrixStore((state) => state.decimalMatrix);
+  const matrix = useMatrixStore((state) => state.matrix);
   const isLoadingMatrix = useMatrixStore((state) => state.isLoadingMatrix);
-  const getCellString = useMatrixStore((state) => state.getCellString);
 
   // Horizontal column virtualizer
   const columnVirtualizer = useVirtualizer({
@@ -37,10 +36,10 @@ const SlaeDisplay = () => {
   const [before, after] =
     columnItems.length > 0
       ? [
-          columnItems[0].start,
-          columnVirtualizer.getTotalSize() -
-            columnItems[columnItems.length - 1].end,
-        ]
+        columnItems[0].start,
+        columnVirtualizer.getTotalSize() -
+        columnItems[columnItems.length - 1].end,
+      ]
       : [0, 0];
 
   return rows === 0 ? (
@@ -95,7 +94,7 @@ const SlaeDisplay = () => {
                   />
                 ) : (
                   <SolutionCell
-                    contents={getCellString(row.index, column.index)}
+                    contents={matrix[row.index][column.index]}
                     rowIndex={row.index}
                     columnIndex={column.index}
                     rowLength={columns}

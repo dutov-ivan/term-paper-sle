@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { MethodType } from "@/lib/methods/IMethod";
 import { methodToString } from "../solution/preferences/method";
 import { MultiSelector } from "../ui/multi-selector";
@@ -18,7 +18,7 @@ const ChartGenerator = () => {
 
   const [timesPerSize, setTimesPerSize] = useState<number>(1);
 
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [, setIsGenerating] = useState<boolean>(false);
   const [wasGenerating, setWasGenerating] = useState<boolean>(false);
   const [chartGroup, setChartGroup] = useState<ChartGroup>();
   const [chartData, setChartData] = useState<ChartDataEntry[]>([]);

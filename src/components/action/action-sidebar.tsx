@@ -8,7 +8,6 @@ import { useSolutionStore } from "@/store/solution";
 import { Card } from "../ui/card";
 import { Slider } from "../ui/slider";
 import { DecimalMatrix } from "@/lib/math/DecimalMatrix";
-import Decimal from "decimal.js";
 
 // Custom hook for interval
 function useInterval(callback: () => void, delay: number | null) {
