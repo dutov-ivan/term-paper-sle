@@ -1,4 +1,4 @@
-import type { DecimalMatrix } from "../math/DecimalMatrix";
+import { SlaeMatrix } from "../math/slae-matrix";
 import { Step } from "./Step";
 
 export class StepSwapRows extends Step {
@@ -6,7 +6,7 @@ export class StepSwapRows extends Step {
     super(sourceRow, targetRow);
   }
 
-  perform(matrix: DecimalMatrix): boolean {
+  perform(matrix: SlaeMatrix): boolean {
     matrix.swapRows(this.sourceRow, this.targetRow);
     return true;
   }
@@ -18,7 +18,7 @@ export class StepSwapRows extends Step {
     return matrix;
   }
 
-  inverse(matrix: number[][]): number[][] {
+  inverse(_: number[][]): number[][] {
     throw new Error("Method not implemented.");
   }
 }

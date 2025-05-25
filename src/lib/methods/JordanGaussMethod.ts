@@ -1,13 +1,13 @@
-import Decimal from "decimal.js";
-import type { DecimalMatrix } from "../math/DecimalMatrix";
-import { isNearZero } from "../math/utils";
-import type { Step } from "../steps/Step";
-import { Method } from "./Method";
-import type { SolutionResult } from "../solution/SolutionResult";
+// Fix .abs() and .greaterThan() errors, and SolutionResult import
+import { SlaeMatrix } from "../math/slae-matrix";
 import { SolutionResultType } from "../solution/SolutionResultType";
+import type { SolutionResult } from "../solution/SolutionResult";
+import { isNearZero } from "../math/utils";
+import { Method } from "./Method";
 import { StepEliminate } from "../steps/StepEliminate";
 import { StepSwapRows } from "../steps/StepSwapRows";
 import { StepScale } from "../steps/StepScale";
+import type { Step } from "../steps/Step";
 
 export class JordanGaussMethod extends Method {
   *getForwardSteps(): IterableIterator<Step> {
@@ -33,9 +33,9 @@ export class JordanGaussMethod extends Method {
     }
   }
 
-  private *performPivotSwap(augmentedMatrix: DecimalMatrix, sourceRow: number) {
+  private *performPivotSwap(augmentedMatrix: SlaeMatrix, sourceRow: number) {
     const pivotRow = this.findPivotRow(augmentedMatrix, sourceRow);
-    if (isNearZero(augmentedMatrix.get(pivotRow, sourceRow).abs())) {
+    if (isNearZero(Math.abs(augmentedMatrix.get(pivotRow, sourceRow)))) {
       return;
     }
     if (pivotRow !== sourceRow) {
@@ -46,48 +46,45 @@ export class JordanGaussMethod extends Method {
     }
   }
 
-  private *performScaling(augmentedMatrix: DecimalMatrix, sourceRow: number) {
+  private *performScaling(augmentedMatrix: SlaeMatrix, sourceRow: number) {
     const step = new StepScale(sourceRow);
-    if (!step.perform(augmentedMatrix)) {
-      return;
+    if (step.perform(augmentedMatrix)) {
+      this._elementaryOperations++;
+      yield step;
     }
-    this._elementaryOperations++;
-    yield step;
   }
 
   private *performElimination(
-    augmentedMatrix: DecimalMatrix,
+    augmentedMatrix: SlaeMatrix,
     sourceRow: number,
     direction: "up" | "down"
   ) {
-    const start = direction === "down" ? sourceRow + 1 : sourceRow - 1;
-    const end = direction === "down" ? augmentedMatrix.rows : -1;
-    const step = direction === "down" ? 1 : -1;
-
+    const start = direction === "down" ? sourceRow + 1 : 0;
+    const end = direction === "down" ? augmentedMatrix.rows : sourceRow;
+    const stepInc = direction === "down" ? 1 : 1;
     for (
       let eliminationRow = start;
-      eliminationRow !== end;
-      eliminationRow += step
+      eliminationRow < end;
+      eliminationRow += stepInc
     ) {
-      const eliminationStep = new StepEliminate(sourceRow, eliminationRow);
-      if (!eliminationStep.perform(augmentedMatrix)) {
+      if (eliminationRow === sourceRow) continue;
+      const step = new StepEliminate(sourceRow, eliminationRow);
+      if (!step.perform(augmentedMatrix)) {
         continue;
       }
       this._elementaryOperations++;
-      yield eliminationStep;
+      yield step;
     }
   }
 
-  private findPivotRow(augmentedMatrix: DecimalMatrix, sourceRow: number) {
+  private findPivotRow(augmentedMatrix: SlaeMatrix, sourceRow: number) {
     let pivotRow = sourceRow;
-    for (let i = sourceRow + 1; i < augmentedMatrix.rows; i++) {
+    for (let row = sourceRow + 1; row < augmentedMatrix.rows; row++) {
       if (
-        augmentedMatrix
-          .get(i, sourceRow)
-          .abs()
-          .greaterThan(augmentedMatrix.get(pivotRow, sourceRow).abs())
+        Math.abs(augmentedMatrix.get(row, sourceRow)) >
+        Math.abs(augmentedMatrix.get(pivotRow, sourceRow))
       ) {
-        pivotRow = i;
+        pivotRow = row;
       }
     }
     return pivotRow;
@@ -111,7 +108,7 @@ export class JordanGaussMethod extends Method {
 
     const roots = new Array<number>(this.matrix.rows);
     for (let i = 0; i < this.matrix.rows; i++) {
-      roots[i] = this.matrix.get(i, this.matrix.cols - 1).toNumber();
+      roots[i] = this.matrix.get(i, this.matrix.cols - 1);
     }
 
     return {
@@ -120,7 +117,7 @@ export class JordanGaussMethod extends Method {
     };
   }
 
-  private analyzeEchelonForm(matrix: DecimalMatrix): SolutionResultType {
+  private analyzeEchelonForm(matrix: SlaeMatrix): SolutionResultType {
     let rank = 0;
     const rows = matrix.rows;
     const cols = matrix.cols - 1;
@@ -138,7 +135,7 @@ export class JordanGaussMethod extends Method {
       : SolutionResultType.Unique;
   }
 
-  private isZeroRow(matrix: DecimalMatrix, row: number, cols: number): boolean {
+  private isZeroRow(matrix: SlaeMatrix, row: number, cols: number): boolean {
     for (let col = 0; col < cols; col++) {
       if (!isNearZero(matrix.get(row, col))) return false;
     }

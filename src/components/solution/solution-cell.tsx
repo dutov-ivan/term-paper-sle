@@ -2,12 +2,14 @@ import { Input } from "@/components/ui/input.tsx";
 import { useSafeNumericInput } from "@/hooks/useSafeNumericInput.ts";
 import "katex/dist/katex.min.css";
 import { useMatrixStore } from "@/store/matrix";
+import type { SlaeMatrix } from "@/lib/math/slae-matrix";
 
 interface SolutionCellProps {
   rowIndex: number;
   columnIndex: number;
   rowLength: number;
-  contents: string;
+  contents: number;
+  matrix: SlaeMatrix | null;
 }
 
 function SolutionCell({
@@ -15,14 +17,19 @@ function SolutionCell({
   rowIndex,
   rowLength,
   contents,
+  matrix,
 }: SolutionCellProps) {
   const isEnding = columnIndex === rowLength - 1;
   const isStarting = columnIndex === 0;
-  const setContents = useMatrixStore((state) => state.setCell);
+
+  const setMatrixCell = useMatrixStore((state) => state.setMatrixCell);
 
   const { value, onChange: onValueChange } = useSafeNumericInput(
     Number(contents),
-    (num) => setContents(rowIndex, columnIndex, num.toString())
+    (num) => {
+      if (!matrix) return;
+      setMatrixCell(rowIndex, columnIndex, num);
+    }
   );
 
   const charCount = value.length > 0 ? value.length : 1;

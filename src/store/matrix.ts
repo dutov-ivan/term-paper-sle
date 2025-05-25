@@ -1,57 +1,30 @@
 import { create } from "zustand";
+import { SlaeMatrix } from "@/lib/math/slae-matrix";
 
-type MatrixState = {
+export type MatrixState = {
   isLoadingMatrix: boolean;
-  size: number;
-  matrix: number[][];
-  setMatrix: (matrix: number[][]) => void;
-
+  matrix: SlaeMatrix | null;
   resize: (newSize: number) => void;
   setIsLoadingMatrix: (isLoading: boolean) => void;
-  getCell: (row: number, col: number) => number;
-  setCell: (row: number, col: number, value: number) => void;
+  setMatrix: (matrix: number[][]) => void;
+  setMatrixCell: (row: number, col: number, value: number) => void;
 };
 
-export const useMatrixStore = create<MatrixState>((set, get) => ({
+export const useMatrixStore = create<MatrixState>((set) => ({
   isLoadingMatrix: false,
-  size: 0,
-  matrix: [],
+  matrix: null,
 
-
-  resize: (newSize) => {
-    const newMatrix = Array.from({ length: newSize }, () =>
-      Array.from({ length: newSize + 1 }, () => 0));
-
-    set({
-      size: newSize,
-      matrix: newMatrix,
-    });
+  resize: (size: number) => {
+    set({ matrix: new SlaeMatrix(size) });
   },
-
   setIsLoadingMatrix: (isLoading) => set({ isLoadingMatrix: isLoading }),
-
-  setMatrix: (matrix) =>
-    set((state) => ({
-      matrix: matrix,
-      stringCache: new Map(),
-      size: matrix.length,
-    })),
-
-  getCell: (row, col) => {
-    const matrix = get().matrix;
-    if (matrix.length === 0 || row < 0 || col < 0 || row >= matrix.length || col >= matrix[0].length) {
-      throw new Error("Invalid row or column index");
-    }
-    return get().matrix[row][col];
-  },
-
-  setCell: (row, col, value) => {
+  setMatrix: (contents: number[][]) =>
+    set({ matrix: SlaeMatrix.fromNumbers(contents) }),
+  setMatrixCell: (row, col, value) =>
     set((state) => {
-      const newMatrix = state.matrix.map((r) => [...r]);
-      newMatrix[row][col] = value;
-      return {
-
-      };
-    });
-  },
+      if (!state.matrix) return {};
+      state.matrix.set(row, col, value);
+      // To trigger update, create a new reference
+      return { matrix: state.matrix };
+    }),
 }));

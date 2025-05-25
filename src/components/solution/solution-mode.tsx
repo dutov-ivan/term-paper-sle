@@ -24,7 +24,7 @@ const SolutionMode = () => {
       <ResizableHandle />
       <ResizablePanel defaultSize={34} minSize={16}>
         <div className="h-full p-4">
-          {/*<ActionSidebar />*/}
+          <ActionSidebar />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

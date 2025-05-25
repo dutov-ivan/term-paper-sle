@@ -1,12 +1,11 @@
-import type { Step } from "../steps/Step";
 import type { SolutionResult } from "../solution/SolutionResult";
 import { SolutionResultType } from "../solution/SolutionResultType";
-import { DecimalMatrix } from "../math/DecimalMatrix";
-import type Decimal from "decimal.js";
 import { Method } from "./Method";
 import { isNearZero } from "../math/utils";
 import { StepSwapRows } from "../steps/StepSwapRows";
 import { StepEliminate } from "../steps/StepEliminate";
+import { SlaeMatrix } from "../math/slae-matrix";
+import type { Step } from "../steps/Step";
 
 export class GaussMethod extends Method {
   *getForwardSteps(): IterableIterator<Step> {
@@ -21,13 +20,12 @@ export class GaussMethod extends Method {
     }
   }
 
-  private *performPivotSwap(augmentedMatrix: DecimalMatrix, sourceRow: number) {
+  private *performPivotSwap(augmentedMatrix: SlaeMatrix, sourceRow: number) {
     const pivotRow = this.findPivotRow(augmentedMatrix, sourceRow);
-    if (isNearZero(augmentedMatrix.get(pivotRow, sourceRow).abs())) {
+    if (isNearZero(Math.abs(augmentedMatrix.get(pivotRow, sourceRow)))) {
       return;
     }
     if (pivotRow !== sourceRow) {
-      augmentedMatrix.swapRows(sourceRow, pivotRow);
       this._elementaryOperations++;
       const step = new StepSwapRows(sourceRow, pivotRow);
       step.perform(augmentedMatrix);
@@ -36,7 +34,7 @@ export class GaussMethod extends Method {
   }
 
   private *performRowElimination(
-    augmentedMatrix: DecimalMatrix,
+    augmentedMatrix: SlaeMatrix,
     sourceRow: number
   ) {
     for (
@@ -48,19 +46,16 @@ export class GaussMethod extends Method {
       if (!step.perform(augmentedMatrix)) {
         continue;
       }
-      this._elementaryOperations++;
       yield step;
     }
   }
 
-  private findPivotRow(augmentedMatrix: DecimalMatrix, sourceRow: number) {
+  private findPivotRow(augmentedMatrix: SlaeMatrix, sourceRow: number) {
     let pivotRow = sourceRow;
     for (let i = sourceRow + 1; i < augmentedMatrix.rows; i++) {
       if (
-        augmentedMatrix
-          .get(i, sourceRow)
-          .abs()
-          .greaterThan(augmentedMatrix.get(pivotRow, sourceRow).abs())
+        Math.abs(augmentedMatrix.get(i, sourceRow)) >
+        Math.abs(augmentedMatrix.get(pivotRow, sourceRow))
       ) {
         pivotRow = i;
       }
@@ -87,19 +82,19 @@ export class GaussMethod extends Method {
     const roots = this.solveUpperTriangular(this.matrix);
     return {
       result: SolutionResultType.Unique,
-      roots: roots.map((r) => r.toNumber()),
+      roots: roots,
     };
   }
 
-  private solveUpperTriangular(matrix: DecimalMatrix): Decimal[] {
-    const roots = new Array<Decimal>(matrix.rows);
+  private solveUpperTriangular(matrix: SlaeMatrix): number[] {
+    const roots = new Array<number>(matrix.rows);
 
     for (let row = matrix.rows - 1; row >= 0; row--) {
       let sum = matrix.get(row, matrix.cols - 1); // RHS value
 
       for (let col = row + 1; col < matrix.cols - 1; col++) {
         const coeff = matrix.get(row, col);
-        sum = sum.sub(coeff.mul(roots[col]));
+        sum = sum - coeff * roots[col];
       }
 
       const pivot = matrix.get(row, row);
@@ -107,13 +102,13 @@ export class GaussMethod extends Method {
         throw new Error("Unexpected zero pivot during back-substitution");
       }
 
-      roots[row] = sum.div(pivot);
+      roots[row] = sum / pivot;
     }
 
     return roots;
   }
 
-  private analyzeEchelonForm(matrix: DecimalMatrix): SolutionResultType {
+  private analyzeEchelonForm(matrix: SlaeMatrix): SolutionResultType {
     let rank = 0;
     const rows = matrix.rows;
     const cols = matrix.cols - 1;
@@ -131,7 +126,7 @@ export class GaussMethod extends Method {
       : SolutionResultType.Unique;
   }
 
-  private isZeroRow(matrix: DecimalMatrix, row: number, cols: number): boolean {
+  private isZeroRow(matrix: SlaeMatrix, row: number, cols: number): boolean {
     for (let col = 0; col < cols; col++) {
       if (!isNearZero(matrix.get(row, col))) return false;
     }

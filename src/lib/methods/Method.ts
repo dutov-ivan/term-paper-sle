@@ -1,4 +1,4 @@
-import { DecimalMatrix } from "../math/DecimalMatrix";
+import { SlaeMatrix } from "../math/slae-matrix";
 import type { SolutionResult } from "../solution/SolutionResult";
 import type { Step } from "../steps/Step";
 import type { IMethod } from "./IMethod";
@@ -18,9 +18,9 @@ export abstract class Method implements IMethod {
     return this._elementaryOperations;
   }
 
-  protected matrix: DecimalMatrix | null = null;
+  public matrix: SlaeMatrix | null = null;
 
-  public run(matrix: DecimalMatrix): IterableIterator<Step> {
+  public run(matrix: SlaeMatrix): IterableIterator<Step> {
     if (this.matrix) {
       this._iterations = 0;
       this._elementaryOperations = 0;

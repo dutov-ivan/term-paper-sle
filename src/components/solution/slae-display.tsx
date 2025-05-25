@@ -1,23 +1,25 @@
-import React from "react";
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import SolutionCell from "@/components/solution/solution-cell.tsx";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Skeleton } from "../ui/skeleton";
 import { useMatrixStore } from "@/store/matrix";
+import { useShallow } from "zustand/shallow";
 
 const SlaeDisplay = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const size = useMatrixStore((state) => state.size);
-  const rows = size;
-  const columns = rows === 0 ? 0 : size + 1;
   const matrix = useMatrixStore((state) => state.matrix);
   const isLoadingMatrix = useMatrixStore((state) => state.isLoadingMatrix);
+
+  const rows = matrix ? matrix.rows : 0;
+  const columns = matrix ? matrix.cols : 0;
+
+  const getScrollElement = useCallback(() => containerRef.current, []);
 
   // Horizontal column virtualizer
   const columnVirtualizer = useVirtualizer({
     count: columns,
     horizontal: true,
-    getScrollElement: () => containerRef.current,
+    getScrollElement,
     estimateSize: () => 120,
     overscan: 5,
   });
@@ -25,7 +27,7 @@ const SlaeDisplay = () => {
   // Vertical row virtualizer
   const rowVirtualizer = useVirtualizer({
     count: rows,
-    getScrollElement: () => containerRef.current,
+    getScrollElement,
     estimateSize: () => 50,
     overscan: 5,
   });
@@ -36,13 +38,13 @@ const SlaeDisplay = () => {
   const [before, after] =
     columnItems.length > 0
       ? [
-        columnItems[0].start,
-        columnVirtualizer.getTotalSize() -
-        columnItems[columnItems.length - 1].end,
-      ]
+          columnItems[0].start,
+          columnVirtualizer.getTotalSize() -
+            columnItems[columnItems.length - 1].end,
+        ]
       : [0, 0];
 
-  return rows === 0 ? (
+  return !matrix ? (
     <div className="w-full h-full flex items-center justify-center text-lg text-muted-foreground">
       Create a matrix to get started!
     </div>
@@ -94,10 +96,11 @@ const SlaeDisplay = () => {
                   />
                 ) : (
                   <SolutionCell
-                    contents={matrix[row.index][column.index]}
+                    contents={matrix.get(row.index, column.index)}
                     rowIndex={row.index}
                     columnIndex={column.index}
                     rowLength={columns}
+                    matrix={matrix}
                   />
                 )}
               </div>

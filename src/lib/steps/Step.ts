@@ -1,4 +1,4 @@
-import type { DecimalMatrix } from "../math/DecimalMatrix";
+import type { SlaeMatrix } from "../math/slae-matrix";
 
 export abstract class Step {
   constructor(sourceRow: number, targetRow: number) {
@@ -8,7 +8,7 @@ export abstract class Step {
 
   protected sourceRow: number;
   protected targetRow: number;
-  abstract perform(matrix: DecimalMatrix): boolean;
+  abstract perform(matrix: SlaeMatrix): boolean;
 
   abstract inverse(matrix: number[][]): number[][];
   print(): string {
