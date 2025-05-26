@@ -1,33 +1,49 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { GaussMethod } from "./GaussMethod";
 import { SolutionResultType } from "../solution/SolutionResultType";
-import { isNearZero } from "../math/utils";
 import { SlaeMatrix } from "../math/slae-matrix";
-import { expectMatricesClose, runMatrixComplete } from "./common";
+import { expectMatricesClose } from "./common";
 
 describe("GaussMethod", () => {
+  let matrix: SlaeMatrix;
   let method: GaussMethod;
 
   beforeEach(() => {
-    method = new GaussMethod();
+    // Ініціалізується у кожному тесті заново
   });
 
   describe("calculates everything properly", () => {
     it("should perform correct pivot swaps and eliminations", () => {
-      const matrixData = [
+      matrix = SlaeMatrix.fromNumbers([
         [0, 2, 1, 4],
         [3, 1, 5, 7],
         [1, 1, 1, 6],
-      ];
-      const steps = Array.from(method.run(SlaeMatrix.fromNumbers(matrixData)));
-      const stepDescriptions = steps.map((step) => step.print());
-      expect(stepDescriptions).toEqual([
-        "Swap rows 0 and 1",
-        "Eliminate row 1 using row 0",
-        "Eliminate row 2 using row 0",
-        "Eliminate row 2 using row 1",
       ]);
-      expectMatricesClose(method.matrix!.contents, [
+      method = new GaussMethod(matrix);
+      const steps = Array.from(method.getForwardSteps());
+      const stepDescriptions = steps.map((step) => step.toMetadata());
+      expect(stepDescriptions).toEqual([
+        { type: "swap", sourceRow: 0, targetRow: 1 },
+        {
+          type: "eliminate",
+          sourceRow: 0,
+          targetRow: 1,
+          multiplier: -0,
+        },
+        {
+          type: "eliminate",
+          sourceRow: 0,
+          targetRow: 2,
+          multiplier: -0.3333333333333333,
+        },
+        {
+          type: "eliminate",
+          sourceRow: 1,
+          targetRow: 2,
+          multiplier: -0.33333333333333337,
+        },
+      ]);
+      expectMatricesClose(method._matrix.contents, [
         [3, 1, 5, 7],
         [0, 2, 1, 4],
         [0, 0, -1, 2.33333333333],
@@ -35,14 +51,12 @@ describe("GaussMethod", () => {
     });
 
     it("should skip pivot swap if pivot is in the right place", () => {
-      const matrixData = [
+      matrix = SlaeMatrix.fromNumbers([
         [5, 1, -1],
         [-3, -1, 2],
-      ];
-
-      const steps = Array.from(method.run(SlaeMatrix.fromNumbers(matrixData)));
-
-      // No pivot swap in first step expected
+      ]);
+      method = new GaussMethod(matrix);
+      const steps = Array.from(method.getForwardSteps());
       expect(
         steps.some((step) => step.constructor.name === "StepSwapRows")
       ).toBe(false);
@@ -51,91 +65,92 @@ describe("GaussMethod", () => {
 
   describe("back substitution", () => {
     it("should return unique solution for upper triangular matrix", () => {
-      const matrixData = [
+      matrix = SlaeMatrix.fromNumbers([
         [2, 3, 8],
         [0, 1, 2],
-      ];
-      method.matrix = SlaeMatrix.fromNumbers(matrixData);
+      ]);
+      method = new GaussMethod(matrix);
 
       const result = method.backSubstitute();
-
       expect(result.result).toBe(SolutionResultType.Unique);
-      expect(result.roots).toBeDefined();
       expect(result.roots).toEqual([1, 2]);
     });
 
-    it("should throw on zero pivot during back substitution", () => {
-      const matrixData = [
+    it("should return no solution for inconsistent system", () => {
+      matrix = SlaeMatrix.fromNumbers([
         [0, 1, 3],
         [0, 0, 2],
-      ];
-      method.matrix = SlaeMatrix.fromNumbers(matrixData);
+      ]);
+      method = new GaussMethod(matrix);
 
-      const step = method.backSubstitute();
-      expect(step.result).toBe(SolutionResultType.None);
-      expect(step.roots).toBeUndefined();
-      expect(step.generalForm).toBeUndefined();
+      const result = method.backSubstitute();
+      expect(result.result).toBe(SolutionResultType.None);
     });
   });
 
   describe("solution type analysis", () => {
     it("should detect infinite solutions for rank deficient matrix", () => {
-      // Matrix with zero row and zero RHS (free variables)
-      const matrixData = [
+      matrix = SlaeMatrix.fromNumbers([
         [1, 2, 3],
         [0, 0, 0],
-      ];
-      method.matrix = SlaeMatrix.fromNumbers(matrixData);
+      ]);
+      method = new GaussMethod(matrix);
 
-      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
+      const solutionType = (method as any).analyzeEchelonForm(method._matrix);
       expect(solutionType).toBe(SolutionResultType.Infinite);
     });
 
     it("should detect no solution for inconsistent system", () => {
-      // Zero row but non-zero RHS (inconsistent)
-      const matrixData = [
+      matrix = SlaeMatrix.fromNumbers([
         [1, -2, 3],
         [0, 0, 5],
-      ];
-      method.matrix = SlaeMatrix.fromNumbers(matrixData);
+      ]);
+      method = new GaussMethod(matrix);
 
-      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
+      const solutionType = (method as any).analyzeEchelonForm(method._matrix);
       expect(solutionType).toBe(SolutionResultType.None);
     });
 
     it("should detect unique solution for full rank matrix", () => {
-      const matrixData = [
+      matrix = SlaeMatrix.fromNumbers([
         [1, 2, 3],
         [0, 1, 4],
-      ];
-      const steps = method.run(SlaeMatrix.fromNumbers(matrixData));
+      ]);
+      method = new GaussMethod(matrix);
 
-      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
+      const solutionType = (method as any).analyzeEchelonForm(method._matrix);
       expect(solutionType).toBe(SolutionResultType.Unique);
     });
   });
 
   describe("edge cases", () => {
     it("should throw error if matrix not initialized", () => {
-      method.matrix = null;
-      expect(() => Array.from(method.getForwardSteps())).toThrow(
+      // simulate by creating a dummy subclass and overriding matrix
+      class DummyGaussMethod extends GaussMethod {
+        constructor() {
+          super(SlaeMatrix.fromNumbers([[0]])); // pass dummy to satisfy ctor
+          this._matrix = null as any;
+        }
+      }
+      const broken = new DummyGaussMethod();
+
+      expect(() => Array.from(broken.getForwardSteps())).toThrow(
         /Matrix not initialized/
       );
-      expect(() => method.backSubstitute()).toThrow(/Matrix not initialized/);
+      expect(() => broken.backSubstitute()).toThrow(/Matrix not initialized/);
     });
 
     it("should handle zero matrix", () => {
-      const matrixData = [
+      matrix = SlaeMatrix.fromNumbers([
         [0, 0, 0],
         [0, 0, 0],
-      ];
-      method.matrix = SlaeMatrix.fromNumbers(matrixData);
+      ]);
+      method = new GaussMethod(matrix);
 
       const steps = Array.from(method.getForwardSteps());
-      // No swaps or elimination should be performed
       expect(steps.length).toBe(0);
 
-      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
+      const solutionType = (method as any).analyzeEchelonForm(method._matrix);
       expect(solutionType).toBe(SolutionResultType.Infinite);
     });
   });

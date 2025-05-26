@@ -2,113 +2,45 @@
 import { SlaeMatrix } from "../math/slae-matrix";
 import { SolutionResultType } from "../solution/SolutionResultType";
 import type { SolutionResult } from "../solution/SolutionResult";
-import { isNearZero } from "../math/utils";
 import { Method } from "./Method";
-import { StepEliminate } from "../steps/StepEliminate";
-import { StepSwapRows } from "../steps/StepSwapRows";
-import { StepScale } from "../steps/StepScale";
+import { JordanGaussStepper } from "./JordanGaussStepper";
 import type { Step } from "../steps/Step";
+import { isNearZero } from "../math/utils";
 
 export class JordanGaussMethod extends Method {
-  *getForwardSteps(): IterableIterator<Step> {
-    if (!this.matrix) {
+  private _stepper: JordanGaussStepper;
+  constructor(matrix: SlaeMatrix) {
+    super(matrix);
+    this._stepper = new JordanGaussStepper(matrix);
+  }
+
+  public getForwardSteps(): IterableIterator<Step> {
+    if (!this._matrix) {
       throw new Error("Matrix not initialized");
     }
-    const augmentedMatrix = this.matrix;
-
-    for (let sourceRow = 0; sourceRow < augmentedMatrix.rows - 1; sourceRow++) {
-      yield* this.performPivotSwap(augmentedMatrix, sourceRow);
-      yield* this.performScaling(augmentedMatrix, sourceRow);
-      yield* this.performElimination(augmentedMatrix, sourceRow, "down");
-    }
-
-    yield* this.performScaling(augmentedMatrix, augmentedMatrix.rows - 1);
-
-    for (
-      let sourceRow = augmentedMatrix.rows - 1;
-      sourceRow >= 0;
-      sourceRow--
-    ) {
-      yield* this.performElimination(augmentedMatrix, sourceRow, "up");
-    }
-  }
-
-  private *performPivotSwap(augmentedMatrix: SlaeMatrix, sourceRow: number) {
-    const pivotRow = this.findPivotRow(augmentedMatrix, sourceRow);
-    if (isNearZero(Math.abs(augmentedMatrix.get(pivotRow, sourceRow)))) {
-      return;
-    }
-    if (pivotRow !== sourceRow) {
-      const step = new StepSwapRows(sourceRow, pivotRow);
-      step.perform(augmentedMatrix);
-      this._elementaryOperations++;
-      yield step;
-    }
-  }
-
-  private *performScaling(augmentedMatrix: SlaeMatrix, sourceRow: number) {
-    const step = new StepScale(sourceRow);
-    if (step.perform(augmentedMatrix)) {
-      this._elementaryOperations++;
-      yield step;
-    }
-  }
-
-  private *performElimination(
-    augmentedMatrix: SlaeMatrix,
-    sourceRow: number,
-    direction: "up" | "down"
-  ) {
-    const start = direction === "down" ? sourceRow + 1 : 0;
-    const end = direction === "down" ? augmentedMatrix.rows : sourceRow;
-    const stepInc = direction === "down" ? 1 : 1;
-    for (
-      let eliminationRow = start;
-      eliminationRow < end;
-      eliminationRow += stepInc
-    ) {
-      if (eliminationRow === sourceRow) continue;
-      const step = new StepEliminate(sourceRow, eliminationRow);
-      if (!step.perform(augmentedMatrix)) {
-        continue;
-      }
-      this._elementaryOperations++;
-      yield step;
-    }
-  }
-
-  private findPivotRow(augmentedMatrix: SlaeMatrix, sourceRow: number) {
-    let pivotRow = sourceRow;
-    for (let row = sourceRow + 1; row < augmentedMatrix.rows; row++) {
-      if (
-        Math.abs(augmentedMatrix.get(row, sourceRow)) >
-        Math.abs(augmentedMatrix.get(pivotRow, sourceRow))
-      ) {
-        pivotRow = row;
-      }
-    }
-    return pivotRow;
+    this._iterator = this._stepper.getForwardSteps();
+    return this._iterator;
   }
 
   backSubstitute(): SolutionResult {
-    if (!this.matrix) {
+    if (!this._matrix) {
       throw new Error("Matrix not initialized");
     }
 
-    const solutionType = this.analyzeEchelonForm(this.matrix);
+    const solutionType = this.analyzeEchelonForm();
     if (solutionType !== SolutionResultType.Unique) {
       return {
         result: solutionType,
-        generalForm:
+        description:
           solutionType === SolutionResultType.Infinite
             ? "General solution exists"
             : undefined,
       };
     }
 
-    const roots = new Array<number>(this.matrix.rows);
-    for (let i = 0; i < this.matrix.rows; i++) {
-      roots[i] = this.matrix.get(i, this.matrix.cols - 1);
+    const roots = new Array<number>(this._matrix.rows);
+    for (let i = 0; i < this._matrix.rows; i++) {
+      roots[i] = this._matrix.get(i, this._matrix.cols - 1);
     }
 
     return {
@@ -117,8 +49,9 @@ export class JordanGaussMethod extends Method {
     };
   }
 
-  private analyzeEchelonForm(matrix: SlaeMatrix): SolutionResultType {
+  public analyzeEchelonForm(): SolutionResultType {
     let rank = 0;
+    const matrix = this._matrix;
     const rows = matrix.rows;
     const cols = matrix.cols - 1;
 

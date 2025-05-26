@@ -11,6 +11,10 @@ export abstract class Method implements IMethod {
   protected _elementaryOperations: number = 0;
   protected _iterator: IterableIterator<Step> | null = null;
 
+  constructor(matrix: SlaeMatrix) {
+    this._matrix = matrix;
+  }
+
   public get iterations(): number {
     return this._iterations;
   }
@@ -19,18 +23,7 @@ export abstract class Method implements IMethod {
     return this._elementaryOperations;
   }
 
-  public matrix: SlaeMatrix | null = null;
-
-  public run(matrix: SlaeMatrix): IterableIterator<Step> {
-    if (this.matrix) {
-      this._iterations = 0;
-      this._elementaryOperations = 0;
-    }
-    this.matrix = matrix;
-
-    this._iterator = this.getForwardSteps();
-    return this._iterator;
-  }
+  public _matrix: SlaeMatrix;
 
   public runToTheEnd() {
     if (!this._iterator) {
@@ -46,10 +39,10 @@ export abstract class Method implements IMethod {
   }
 
   public applyStep(step: Step): void {
-    if (!this.matrix) {
+    if (!this._matrix) {
       throw new Error("Matrix not initialized");
     }
-    step.perform(this.matrix);
+    step.perform(this._matrix);
     this._elementaryOperations += 1;
     this._iterations++;
   }

@@ -9,10 +9,10 @@ import type { Step } from "../steps/Step";
 
 export class GaussMethod extends Method {
   *getForwardSteps(): IterableIterator<Step> {
-    if (!this.matrix) {
+    if (!this._matrix) {
       throw new Error("Matrix not initialized");
     }
-    const augmentedMatrix = this.matrix;
+    const augmentedMatrix = this._matrix;
 
     for (let sourceRow = 0; sourceRow < augmentedMatrix.rows - 1; sourceRow++) {
       yield* this.performPivotSwap(augmentedMatrix, sourceRow);
@@ -64,22 +64,22 @@ export class GaussMethod extends Method {
   }
 
   backSubstitute(): SolutionResult {
-    if (!this.matrix) {
+    if (!this._matrix) {
       throw new Error("Matrix not initialized");
     }
 
-    const solutionType = this.analyzeEchelonForm(this.matrix);
+    const solutionType = this.analyzeEchelonForm(this._matrix);
     if (solutionType !== SolutionResultType.Unique) {
       return {
         result: solutionType,
-        generalForm:
+        description:
           solutionType === SolutionResultType.Infinite
             ? "General solution exists"
             : undefined,
       };
     }
 
-    const roots = this.solveUpperTriangular(this.matrix);
+    const roots = this.solveUpperTriangular(this._matrix);
     return {
       result: SolutionResultType.Unique,
       roots: roots,

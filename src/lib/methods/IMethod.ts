@@ -2,7 +2,7 @@ import type { Step } from "../steps/Step";
 import type { SolutionResult } from "../solution/SolutionResult";
 import { GaussMethod } from "./GaussMethod";
 import { JordanGaussMethod } from "./JordanGaussMethod";
-import { MatrixMethod } from "./MatrixMethod";
+import { InverseMethod } from "./InverseMethod";
 import type { SlaeMatrix } from "../math/slae-matrix";
 
 export const MethodType = {
@@ -13,14 +13,17 @@ export const MethodType = {
 
 export type MethodType = (typeof MethodType)[keyof typeof MethodType];
 
-export const createSolutionMethodFromType = (type: MethodType) => {
+export const createSolutionMethodFromType = (
+  type: MethodType,
+  matrix: SlaeMatrix
+) => {
   switch (type) {
     case MethodType.Gauss:
-      return new GaussMethod();
+      return new GaussMethod(matrix);
     case MethodType.GaussJordan:
-      return new JordanGaussMethod();
+      return new JordanGaussMethod(matrix);
     case MethodType.InverseMatrix:
-      return new MatrixMethod();
+      return new InverseMethod(matrix);
     default:
       throw new Error(`Unknown method type: ${type}`);
   }
@@ -31,7 +34,7 @@ export const getMethodTypeFromClass = (method: IMethod): MethodType => {
     return MethodType.Gauss;
   } else if (method instanceof JordanGaussMethod) {
     return MethodType.GaussJordan;
-  } else if (method instanceof MatrixMethod) {
+  } else if (method instanceof InverseMethod) {
     return MethodType.InverseMatrix;
   } else {
     throw new Error("Invalid method");
@@ -42,8 +45,7 @@ export const getMethodTypeFromClass = (method: IMethod): MethodType => {
 export interface IMethod {
   getForwardSteps(): IterableIterator<Step>;
   backSubstitute(): SolutionResult;
-  run(matrix: SlaeMatrix): IterableIterator<Step>;
   runToTheEnd(): Step[];
-  matrix: SlaeMatrix | null;
+  _matrix: SlaeMatrix | null;
   applyStep(step: Step): void;
 }
