@@ -1,4 +1,5 @@
 import type { SlaeMatrix } from "../math/slae-matrix";
+import type { StepMetadata } from "./StepMetadata";
 
 export abstract class Step {
   constructor(sourceRow: number, targetRow: number) {
@@ -6,12 +7,12 @@ export abstract class Step {
     this.targetRow = targetRow;
   }
 
-  protected sourceRow: number;
-  protected targetRow: number;
+  public sourceRow: number;
+  public targetRow: number;
+
   abstract perform(matrix: SlaeMatrix): boolean;
 
   abstract inverse(matrix: number[][]): number[][];
-  print(): string {
-    return `From ${this.sourceRow} to ${this.targetRow} — ${this.constructor.name}`;
-  }
+
+  abstract toMetadata(): StepMetadata;
 }

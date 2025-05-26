@@ -9,7 +9,7 @@ const SizePreferences = () => {
   return (
     <div className="flex flex-col gap-4">
       <Label htmlFor="size">Size</Label>
-      <SizeInput size={matrix?.size ?? 0} setSize={setSize} />
+      <SizeInput size={matrix?.length ?? 0} setSize={setSize} />
     </div>
   );
 };

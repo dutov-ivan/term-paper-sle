@@ -9,25 +9,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label.tsx";
-import { getMethodTypeFromClass, MethodType } from "@/lib/methods/IMethod.ts";
+import { MethodType } from "@/lib/methods/IMethod.ts";
 import { useSolutionStore } from "@/store/solution";
-import { useEffect, useState } from "react";
 import { methodToString } from "./method";
 
 const MethodPreferences = () => {
-  const solutionMethod = useSolutionStore((state) => state.method);
-  const setMethodStore = useSolutionStore((state) => state.setMethod);
-
-  const [method, setMethod] = useState<MethodType | null>(
-    solutionMethod && getMethodTypeFromClass(solutionMethod)
-  );
-
-  // Local state for size input
-
-  useEffect(() => {
-    if (!method) return;
-    setMethodStore(method);
-  }, [method]);
+  const method = useSolutionStore((state) => state.method);
+  const setMethod = useSolutionStore((state) => state.setMethod);
 
   return (
     <div className="flex flex-col gap-4">

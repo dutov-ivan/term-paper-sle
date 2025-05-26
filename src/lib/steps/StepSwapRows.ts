@@ -1,7 +1,15 @@
 import { SlaeMatrix } from "../math/slae-matrix";
 import { Step } from "./Step";
+import type { StepMetadata } from "./StepMetadata";
 
 export class StepSwapRows extends Step {
+  toMetadata(): StepMetadata {
+    return {
+      type: "swap",
+      sourceRow: this.sourceRow,
+      targetRow: this.targetRow,
+    };
+  }
   constructor(sourceRow: number, targetRow: number) {
     super(sourceRow, targetRow);
   }
@@ -18,7 +26,7 @@ export class StepSwapRows extends Step {
     return matrix;
   }
 
-  inverse(_: number[][]): number[][] {
-    throw new Error("Method not implemented.");
+  inverse(matrix: number[][]): number[][] {
+    return this.performOnNumbers(matrix);
   }
 }

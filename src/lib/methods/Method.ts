@@ -9,6 +9,7 @@ export abstract class Method implements IMethod {
 
   protected _iterations: number = 0;
   protected _elementaryOperations: number = 0;
+  protected _iterator: IterableIterator<Step> | null = null;
 
   public get iterations(): number {
     return this._iterations;
@@ -26,6 +27,30 @@ export abstract class Method implements IMethod {
       this._elementaryOperations = 0;
     }
     this.matrix = matrix;
-    return this.getForwardSteps();
+
+    this._iterator = this.getForwardSteps();
+    return this._iterator;
+  }
+
+  public runToTheEnd() {
+    if (!this._iterator) {
+      throw new Error("Method not initialized. Call run() first.");
+    }
+
+    const steps: Step[] = [];
+    for (const step of this._iterator) {
+      steps.push(step);
+      this._iterations++;
+    }
+    return steps;
+  }
+
+  public applyStep(step: Step): void {
+    if (!this.matrix) {
+      throw new Error("Matrix not initialized");
+    }
+    step.perform(this.matrix);
+    this._elementaryOperations += 1;
+    this._iterations++;
   }
 }

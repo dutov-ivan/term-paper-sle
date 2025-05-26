@@ -2,20 +2,23 @@ import { Button } from "../ui/button";
 import { ArrowLeft, ArrowRight, Goal, UndoDot } from "lucide-react";
 import { Card } from "../ui/card";
 import { Slider } from "../ui/slider";
-import type { IMethod } from "@/lib/methods/IMethod";
+import { cn } from "@/lib/utils";
+import type { Direction } from "./action";
 
 interface StepControlsProps {
   isRunning: boolean;
+  isFirstStep: boolean;
+  isLastStep: boolean;
   handleStart: () => void;
   handleStop: () => void;
   handleReset: () => void;
-  forwardOne: () => void;
-  backwardOne: () => void;
-  skipAndFinish: () => void;
+  direction: Direction;
+  setDirection: (value: Direction) => void;
+  moveOne: (direction: Direction) => void;
+  skipAndFinish: (direction: Direction) => void;
   speed: number;
   setSpeed: (value: number) => void;
-  method: IMethod | null;
-  index: number;
+  canUse: boolean;
 }
 
 const StepControls = ({
@@ -23,29 +26,62 @@ const StepControls = ({
   handleStart,
   handleStop,
   handleReset,
-  forwardOne,
-  backwardOne,
+  direction,
+  setDirection,
+  moveOne,
   skipAndFinish,
   speed,
   setSpeed,
-  method,
-  index,
+  canUse,
+  isFirstStep,
+  isLastStep,
 }: StepControlsProps) => {
+  const impossibleToMoveForward = isLastStep && direction === "forward";
+  const impossibleToMoveBackward = isFirstStep && direction === "backward";
+
+  const toggleDirection = () => {
+    if (direction === "forward") {
+      setDirection("backward");
+    } else {
+      setDirection("forward");
+    }
+  };
+
   return (
-    <div className="flex gap-4 mb-4 items-center">
+    <div
+      className={cn(
+        "flex gap-4 mb-4 items-center",
+        !canUse && "opacity-50 pointer-events-none select-none"
+      )}
+    >
       {isRunning ? (
         <Button onClick={handleStop}>Stop</Button>
       ) : (
-        <Button disabled={!method} onClick={handleStart}>
-          Start
-        </Button>
+        <Button onClick={handleStart}>Start</Button>
       )}
 
-      <Button onClick={backwardOne} disabled={index < 0} variant="outline">
-        <ArrowLeft />
+      <Button
+        onClick={() => moveOne(direction)}
+        variant={"outline"}
+        disabled={
+          !canUse || impossibleToMoveBackward || impossibleToMoveForward
+        }
+      >
+        Move
       </Button>
-      <Button onClick={forwardOne} disabled={!isRunning} variant="outline">
-        <ArrowRight />
+
+      <Button onClick={toggleDirection} variant="outline">
+        {direction === "forward" ? (
+          <>
+            Forward
+            <ArrowRight />
+          </>
+        ) : (
+          <>
+            Backward
+            <ArrowLeft />
+          </>
+        )}
       </Button>
 
       <Button onClick={handleReset} variant="outline">
@@ -64,7 +100,7 @@ const StepControls = ({
           />
         </div>
       </Card>
-      <Button onClick={skipAndFinish}>
+      <Button onClick={() => skipAndFinish(direction)}>
         <Goal />
       </Button>
     </div>

@@ -2,14 +2,13 @@ import { Input } from "@/components/ui/input.tsx";
 import { useSafeNumericInput } from "@/hooks/useSafeNumericInput.ts";
 import "katex/dist/katex.min.css";
 import { useMatrixStore } from "@/store/matrix";
-import type { SlaeMatrix } from "@/lib/math/slae-matrix";
 
 interface SolutionCellProps {
   rowIndex: number;
   columnIndex: number;
   rowLength: number;
   contents: number;
-  matrix: SlaeMatrix | null;
+  matrix: number[][] | null;
 }
 
 function SolutionCell({

@@ -1,21 +1,19 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import SolutionCell from "@/components/solution/solution-cell.tsx";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Skeleton } from "../ui/skeleton";
 import { useMatrixStore } from "@/store/matrix";
-import { useShallow } from "zustand/shallow";
 
 const SlaeDisplay = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const matrix = useMatrixStore((state) => state.matrix);
   const isLoadingMatrix = useMatrixStore((state) => state.isLoadingMatrix);
-
-  const rows = matrix ? matrix.rows : 0;
-  const columns = matrix ? matrix.cols : 0;
+  const currentTargetRow = useMatrixStore((state) => state.currentTargetRow);
+  const rows = matrix ? matrix.length : 0;
+  const columns = matrix ? matrix[0].length : 0;
 
   const getScrollElement = useCallback(() => containerRef.current, []);
 
-  // Horizontal column virtualizer
   const columnVirtualizer = useVirtualizer({
     count: columns,
     horizontal: true,
@@ -24,13 +22,20 @@ const SlaeDisplay = () => {
     overscan: 5,
   });
 
-  // Vertical row virtualizer
   const rowVirtualizer = useVirtualizer({
     count: rows,
     getScrollElement,
     estimateSize: () => 50,
     overscan: 5,
   });
+
+  useEffect(() => {
+    if (currentTargetRow === null || currentTargetRow < 0) return;
+    rowVirtualizer.scrollToIndex(currentTargetRow, {
+      behavior: "smooth",
+      align: "center",
+    });
+  }, [currentTargetRow]);
 
   const columnItems = columnVirtualizer.getVirtualItems();
   const rowItems = rowVirtualizer.getVirtualItems();
@@ -96,7 +101,7 @@ const SlaeDisplay = () => {
                   />
                 ) : (
                   <SolutionCell
-                    contents={matrix.get(row.index, column.index)}
+                    contents={matrix[row.index][column.index]}
                     rowIndex={row.index}
                     columnIndex={column.index}
                     rowLength={columns}

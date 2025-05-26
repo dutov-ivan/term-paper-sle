@@ -1,3 +1,5 @@
+/// <reference types="vitest" />
+
 import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
@@ -48,5 +50,9 @@ export default defineConfig({
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
   },
 });

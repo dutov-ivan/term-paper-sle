@@ -3,7 +3,6 @@ import { useMatrixStore } from "@/store/matrix";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { SlaeMatrix } from "@/lib/math/slae-matrix";
 
 type GenerationProperties = {
   from: number;
@@ -49,8 +48,8 @@ const RandomMatrixGenerator = () => {
     setTimeout(async () => {
       try {
         const result = generateRandomMatrix(
-          matrix.rows,
-          matrix.cols,
+          matrix.length,
+          matrix[0].length,
           generationProperties.from,
           generationProperties.to
         );
