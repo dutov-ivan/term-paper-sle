@@ -34,6 +34,7 @@ export class StepScaleAfterPivot extends Step {
         columnIndex,
         matrix.get(sourceRow, columnIndex) * this._multiplier!
       );
+      this.iterations++;
     }
     return true;
   }

@@ -9,10 +9,10 @@ import type { Step } from "../steps/Step";
 
 export class GaussMethod extends Method {
   *getForwardSteps(): IterableIterator<Step> {
-    if (!this._matrix) {
+    if (!this.matrix) {
       throw new Error("Matrix not initialized");
     }
-    const augmentedMatrix = this._matrix;
+    const augmentedMatrix = this.matrix;
 
     for (let sourceRow = 0; sourceRow < augmentedMatrix.rows - 1; sourceRow++) {
       yield* this.performPivotSwap(augmentedMatrix, sourceRow);
@@ -26,9 +26,10 @@ export class GaussMethod extends Method {
       return;
     }
     if (pivotRow !== sourceRow) {
-      this._elementaryOperations++;
       const step = new StepSwapRows(sourceRow, pivotRow);
       step.perform(augmentedMatrix);
+      this.methodMetadata.elementaryOperations++;
+      this.methodMetadata.iterations += step.iterations;
       yield step;
     }
   }
@@ -46,6 +47,8 @@ export class GaussMethod extends Method {
       if (!step.perform(augmentedMatrix, false)) {
         continue;
       }
+      this.methodMetadata.elementaryOperations++;
+      this.methodMetadata.iterations += step.iterations;
       yield step;
     }
   }
@@ -59,16 +62,17 @@ export class GaussMethod extends Method {
       ) {
         pivotRow = i;
       }
+      this.methodMetadata.iterations++;
     }
     return pivotRow;
   }
 
   backSubstitute(): SolutionResult {
-    if (!this._matrix) {
+    if (!this.matrix) {
       throw new Error("Matrix not initialized");
     }
 
-    const solutionType = this.analyzeEchelonForm(this._matrix);
+    const solutionType = this.analyzeEchelonForm(this.matrix);
     if (solutionType !== SolutionResultType.Unique) {
       return {
         result: solutionType,
@@ -79,7 +83,7 @@ export class GaussMethod extends Method {
       };
     }
 
-    const roots = this.solveUpperTriangular(this._matrix);
+    const roots = this.solveUpperTriangular(this.matrix);
     return {
       result: SolutionResultType.Unique,
       roots: roots,
@@ -95,6 +99,7 @@ export class GaussMethod extends Method {
       for (let col = row + 1; col < matrix.cols - 1; col++) {
         const coeff = matrix.get(row, col);
         sum -= coeff * roots[col];
+        this.methodMetadata.backSubstitutionOperations++;
       }
 
       const pivot = matrix.get(row, row);
@@ -128,6 +133,7 @@ export class GaussMethod extends Method {
 
   private isZeroRow(matrix: SlaeMatrix, row: number, cols: number): boolean {
     for (let col = 0; col < cols; col++) {
+      this.methodMetadata.backSubstitutionOperations++;
       if (!isNearZero(matrix.get(row, col))) return false;
     }
     return true;

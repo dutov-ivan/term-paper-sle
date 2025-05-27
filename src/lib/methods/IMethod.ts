@@ -46,6 +46,5 @@ export interface IMethod {
   getForwardSteps(): IterableIterator<Step>;
   backSubstitute(): SolutionResult;
   runToTheEnd(): Step[];
-  _matrix: SlaeMatrix | null;
-  applyStep(step: Step): void;
+  matrix: SlaeMatrix | null;
 }

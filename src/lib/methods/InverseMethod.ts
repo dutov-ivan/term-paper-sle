@@ -26,7 +26,10 @@ export class InverseMethod extends Method {
     super(matrix);
     this._adjustedMatrix = matrix.toSquareMatrix();
     this._inverseMatrix = SquareMatrix.identity(matrix.rows);
-    this._matrixStepper = new JordanGaussStepper(this._adjustedMatrix);
+    this._matrixStepper = new JordanGaussStepper(
+      this._adjustedMatrix,
+      this.methodMetadata
+    );
     this._rhs = new Array(matrix.rows);
     for (let i = 0; i < matrix.rows; i++) {
       this._rhs[i] = matrix.get(i, matrix.cols - 1);
@@ -39,15 +42,18 @@ export class InverseMethod extends Method {
     }
     const innerIterator = this._matrixStepper.getForwardSteps();
     const inverseMatrix = this._inverseMatrix;
+    const metadata = this.methodMetadata;
 
     function* wrapper(): IterableIterator<Step> {
       for (const step of innerIterator) {
         step.perform(inverseMatrix);
+        metadata.elementaryOperations++;
+        metadata.iterations += step.iterations;
         yield step;
       }
     }
-    this._iterator = wrapper();
-    return this._iterator;
+    this.iterator = wrapper();
+    return this.iterator;
   }
 
   backSubstitute(): SolutionResult {
@@ -67,6 +73,8 @@ export class InverseMethod extends Method {
     }
 
     const roots = this._inverseMatrix.multiplyByVector(this._rhs);
+    this.methodMetadata.backSubstitutionOperations +=
+      this._inverseMatrix.rows * this._inverseMatrix.cols;
 
     return {
       result: SolutionResultType.Unique,
@@ -90,6 +98,7 @@ export class InverseMethod extends Method {
 
   private isZeroRow(matrix: SquareMatrix, row: number, cols: number): boolean {
     for (let col = 0; col < cols; col++) {
+      this.methodMetadata.backSubstitutionOperations++;
       if (!isNearZero(matrix.get(row, col))) return false;
     }
     return true;

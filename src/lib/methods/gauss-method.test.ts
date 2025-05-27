@@ -43,7 +43,7 @@ describe("GaussMethod", () => {
           multiplier: -0.33333333333333337,
         },
       ]);
-      expectMatricesClose(method._matrix.contents, [
+      expectMatricesClose(method.matrix.contents, [
         [3, 1, 5, 7],
         [0, 2, 1, 4],
         [0, 0, -1, 2.33333333333],
@@ -96,7 +96,7 @@ describe("GaussMethod", () => {
       ]);
       method = new GaussMethod(matrix);
 
-      const solutionType = (method as any).analyzeEchelonForm(method._matrix);
+      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
       expect(solutionType).toBe(SolutionResultType.Infinite);
     });
 
@@ -107,7 +107,7 @@ describe("GaussMethod", () => {
       ]);
       method = new GaussMethod(matrix);
 
-      const solutionType = (method as any).analyzeEchelonForm(method._matrix);
+      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
       expect(solutionType).toBe(SolutionResultType.None);
     });
 
@@ -118,7 +118,7 @@ describe("GaussMethod", () => {
       ]);
       method = new GaussMethod(matrix);
 
-      const solutionType = (method as any).analyzeEchelonForm(method._matrix);
+      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
       expect(solutionType).toBe(SolutionResultType.Unique);
     });
   });
@@ -129,7 +129,7 @@ describe("GaussMethod", () => {
       class DummyGaussMethod extends GaussMethod {
         constructor() {
           super(SlaeMatrix.fromNumbers([[0]])); // pass dummy to satisfy ctor
-          this._matrix = null as any;
+          this.matrix = null as any;
         }
       }
       const broken = new DummyGaussMethod();
@@ -150,7 +150,7 @@ describe("GaussMethod", () => {
       const steps = Array.from(method.getForwardSteps());
       expect(steps.length).toBe(0);
 
-      const solutionType = (method as any).analyzeEchelonForm(method._matrix);
+      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
       expect(solutionType).toBe(SolutionResultType.Infinite);
     });
   });

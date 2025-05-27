@@ -12,6 +12,7 @@ export class StepEliminate extends Step {
       multiplier: this._multiplier,
     };
   }
+
   perform(matrix: Matrix, isStartingFromBeginning: boolean = true): boolean {
     return this.eliminateRow(matrix, isStartingFromBeginning);
   }
@@ -38,6 +39,7 @@ export class StepEliminate extends Step {
         augmentedMatrix.get(targetRow, col) +
         augmentedMatrix.get(sourceRow, col) * this._multiplier;
       augmentedMatrix.set(targetRow, col, value);
+      this.iterations++;
     }
 
     return true;

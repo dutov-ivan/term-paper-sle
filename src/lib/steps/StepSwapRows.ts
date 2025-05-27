@@ -14,6 +14,8 @@ export class StepSwapRows extends Step {
     super(sourceRow, targetRow);
   }
 
+  iterations = 1;
+
   perform(matrix: Matrix): boolean {
     matrix.swapRows(this.sourceRow, this.targetRow);
     return true;

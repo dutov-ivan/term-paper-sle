@@ -7,6 +7,8 @@ export abstract class Step {
     this.targetRow = targetRow;
   }
 
+  public iterations = 0;
+
   public sourceRow: number;
   public targetRow: number;
 

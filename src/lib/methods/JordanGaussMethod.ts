@@ -10,19 +10,19 @@ export class JordanGaussMethod extends Method {
   private _stepper: JordanGaussStepper;
   constructor(matrix: SlaeMatrix) {
     super(matrix);
-    this._stepper = new JordanGaussStepper(matrix);
+    this._stepper = new JordanGaussStepper(matrix, this.methodMetadata);
   }
 
   public getForwardSteps(): IterableIterator<Step> {
-    if (!this._matrix) {
+    if (!this.matrix) {
       throw new Error("Matrix not initialized");
     }
-    this._iterator = this._stepper.getForwardSteps();
-    return this._iterator;
+    this.iterator = this._stepper.getForwardSteps();
+    return this.iterator;
   }
 
   backSubstitute(): SolutionResult {
-    if (!this._matrix) {
+    if (!this.matrix) {
       throw new Error("Matrix not initialized");
     }
 
@@ -37,9 +37,10 @@ export class JordanGaussMethod extends Method {
       };
     }
 
-    const roots = new Array<number>(this._matrix.rows);
-    for (let i = 0; i < this._matrix.rows; i++) {
-      roots[i] = this._matrix.get(i, this._matrix.cols - 1);
+    const roots = new Array<number>(this.matrix.rows);
+    for (let i = 0; i < this.matrix.rows; i++) {
+      roots[i] = this.matrix.get(i, this.matrix.cols - 1);
+      this.methodMetadata.backSubstitutionOperations++;
     }
 
     return {
@@ -50,7 +51,7 @@ export class JordanGaussMethod extends Method {
 
   public analyzeEchelonForm(): SolutionResultType {
     let rank = 0;
-    const matrix = this._matrix;
+    const matrix = this.matrix;
     const rows = matrix.rows;
     const cols = matrix.cols - 1;
 
@@ -69,6 +70,7 @@ export class JordanGaussMethod extends Method {
 
   private isZeroRow(matrix: SlaeMatrix, row: number, cols: number): boolean {
     for (let col = 0; col < cols; col++) {
+      this.methodMetadata.backSubstitutionOperations++;
       if (!isNearZero(matrix.get(row, col))) return false;
     }
     return true;

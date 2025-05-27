@@ -4,27 +4,22 @@ import type { Step } from "../steps/Step";
 import { StepEliminate } from "../steps/StepEliminate";
 import { StepScaleAfterPivot } from "../steps/StepScale";
 import { StepSwapRows } from "../steps/StepSwapRows";
+import type { MethodMetadata } from "./Method";
 
 export class JordanGaussStepper {
-  private _matrix: Matrix;
-  private _elementaryOperations: number = 0;
-  public get elementaryOperations(): number {
-    return this._elementaryOperations;
-  }
+  public matrix: Matrix;
+  public metadata: MethodMetadata;
 
-  public get matrix(): Matrix {
-    return this._matrix;
-  }
-
-  constructor(matrix: Matrix) {
-    this._matrix = matrix;
+  constructor(matrix: Matrix, metadata: MethodMetadata) {
+    this.matrix = matrix;
+    this.metadata = metadata;
   }
 
   *getForwardSteps(): IterableIterator<Step> {
-    if (!this._matrix) {
+    if (!this.matrix) {
       throw new Error("Matrix not initialized");
     }
-    const augmentedMatrix = this._matrix;
+    const augmentedMatrix = this.matrix;
 
     for (let sourceRow = 0; sourceRow < augmentedMatrix.rows - 1; sourceRow++) {
       yield* this.performPivotSwap(augmentedMatrix, sourceRow);
@@ -51,7 +46,8 @@ export class JordanGaussStepper {
     if (pivotRow !== sourceRow) {
       const step = new StepSwapRows(sourceRow, pivotRow);
       step.perform(augmentedMatrix);
-      this._elementaryOperations++;
+      this.metadata.elementaryOperations++;
+      this.metadata.iterations += step.iterations;
       yield step;
     }
   }
@@ -59,7 +55,8 @@ export class JordanGaussStepper {
   private *performScaling(augmentedMatrix: Matrix, sourceRow: number) {
     const step = new StepScaleAfterPivot(sourceRow);
     if (step.perform(augmentedMatrix, true)) {
-      this._elementaryOperations++;
+      this.metadata.elementaryOperations++;
+      this.metadata.iterations += step.iterations;
       yield step;
     }
   }
@@ -82,7 +79,8 @@ export class JordanGaussStepper {
       if (!step.perform(augmentedMatrix, false)) {
         continue;
       }
-      this._elementaryOperations++;
+      this.metadata.iterations += step.iterations;
+      this.metadata.elementaryOperations++;
       yield step;
     }
   }
