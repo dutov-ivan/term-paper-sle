@@ -1,33 +1,38 @@
-import type { SlaeMatrix } from "../math/slae-matrix";
+import type { Matrix } from "../math/Matrix";
 import { isNearZero } from "../math/utils";
 import { Step } from "./Step";
 import type { StepMetadata } from "./StepMetadata";
 
-export class StepScale extends Step {
+export class StepScaleAfterPivot extends Step {
   toMetadata(): StepMetadata {
     return {
       type: "scale",
       sourceRow: this.sourceRow,
       targetRow: this.targetRow,
-      multiplier: this.multiplier,
+      multiplier: this._multiplier,
     };
   }
-  multiplier: number = 1;
 
-  perform(matrix: SlaeMatrix): boolean {
+  private _multiplier?: number;
+
+  perform(matrix: Matrix, isStartingFromSource: boolean = false): boolean {
     const sourceRow = this.sourceRow;
     const pivot = matrix.get(sourceRow, sourceRow);
-    this.multiplier = pivot;
+
+    if (this._multiplier === undefined) {
+      if (isNearZero(pivot)) return false;
+      this._multiplier = 1 / pivot;
+    }
     if (isNearZero(Math.abs(pivot))) return false;
     for (
-      let columnIndex = sourceRow;
+      let columnIndex = isStartingFromSource ? sourceRow : 0;
       columnIndex < matrix.cols;
       columnIndex++
     ) {
       matrix.set(
         sourceRow,
         columnIndex,
-        matrix.get(sourceRow, columnIndex) / pivot
+        matrix.get(sourceRow, columnIndex) * this._multiplier
       );
     }
     return true;
@@ -39,7 +44,7 @@ export class StepScale extends Step {
 
   inverse(matrix: number[][]): number[][] {
     for (let col = 0; col < matrix[0].length; col++) {
-      matrix[this.sourceRow][col] *= this.multiplier;
+      matrix[this.sourceRow][col] *= this._multiplier!;
     }
     return matrix;
   }

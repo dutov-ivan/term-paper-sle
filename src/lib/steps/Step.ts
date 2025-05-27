@@ -1,4 +1,4 @@
-import type { SlaeMatrix } from "../math/slae-matrix";
+import type { Matrix } from "../math/Matrix";
 import type { StepMetadata } from "./StepMetadata";
 
 export abstract class Step {
@@ -10,7 +10,7 @@ export abstract class Step {
   public sourceRow: number;
   public targetRow: number;
 
-  abstract perform(matrix: SlaeMatrix): boolean;
+  abstract perform(matrix: Matrix): boolean;
 
   abstract inverse(matrix: number[][]): number[][];
 

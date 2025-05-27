@@ -8,20 +8,43 @@ import type { Step } from "@/lib/steps/Step";
 import type { SolutionResult } from "@/lib/solution/SolutionResult";
 import { SlaeMatrix } from "@/lib/math/slae-matrix";
 import type { StepMetadata } from "@/lib/steps/StepMetadata";
+import type { Matrix } from "@/lib/math/Matrix";
+import { InverseMethod } from "@/lib/methods/InverseMethod";
+import type { MatrixConfiguration } from "@/store/matrix";
+
+export type SolutionWorker = {
+  initializeSolution(method: MethodType, matrix: number[][]): Promise<void>;
+  getNextStep(): StepMetadata | null;
+  getPreviousStep(): StepMetadata | null;
+  getCurrentMatrix(): MatrixConfiguration | null;
+  getSteps(): StepMetadata[];
+  skipAndFinishForward(): {
+    results: SolutionResult | null;
+    matrix: MatrixConfiguration;
+  } | null;
+  skipAndFinishBackward(): MatrixConfiguration | null;
+  getResult(): SolutionResult | null;
+  reset(): void;
+};
 
 let methodInstance: IMethod | null = null;
-let matrixInstance: SlaeMatrix | null = null;
+let matrixInstance: Matrix | null = null;
+let inverseInstance: Matrix | null = null;
 let iterator: Iterator<Step> | null = null;
 let appliedSteps: Step[] = [];
 
-const solutionWorker = {
+const solutionWorker: SolutionWorker = {
   async initializeSolution(
     method: MethodType,
     matrix: number[][]
   ): Promise<void> {
-    matrixInstance = SlaeMatrix.fromNumbers(matrix);
-    methodInstance = createSolutionMethodFromType(method);
-    iterator = methodInstance.run(matrixInstance);
+    const slaeMatrix = SlaeMatrix.fromNumbers(matrix);
+    matrixInstance = slaeMatrix;
+    methodInstance = createSolutionMethodFromType(method, slaeMatrix);
+    if (methodInstance instanceof InverseMethod) {
+      inverseInstance = methodInstance.inverseMatrix;
+    }
+    iterator = methodInstance.getForwardSteps();
     appliedSteps = [];
   },
 
@@ -45,8 +68,18 @@ const solutionWorker = {
     return lastStep.toMetadata();
   },
 
-  getCurrentMatrix(): number[][] {
-    return matrixInstance?.contents ?? [];
+  getCurrentMatrix(): MatrixConfiguration | null {
+    if (methodInstance instanceof InverseMethod) {
+      return {
+        type: "inverse",
+        adjusted: matrixInstance!.contents,
+        inverse: inverseInstance?.contents ?? [],
+      };
+    }
+    return {
+      type: "standard",
+      matrix: matrixInstance?.contents ?? [],
+    };
   },
 
   getSteps(): StepMetadata[] {
@@ -55,21 +88,52 @@ const solutionWorker = {
 
   skipAndFinishForward(): {
     results: SolutionResult | null;
-    matrix: number[][];
+    matrix: MatrixConfiguration;
   } | null {
     if (!iterator || !methodInstance || !matrixInstance) return null;
 
     while (true) {
       const next = iterator.next();
       if (next.done) break;
-      next.value.perform(matrixInstance);
       appliedSteps.push(next.value);
     }
 
     return {
       results: methodInstance.backSubstitute(),
-      matrix: matrixInstance.contents,
+      matrix:
+        methodInstance instanceof InverseMethod
+          ? {
+              type: "inverse",
+              adjusted: matrixInstance.contents,
+              inverse: inverseInstance?.contents ?? [],
+            }
+          : {
+              type: "standard",
+              matrix: matrixInstance.contents,
+            },
     };
+  },
+
+  skipAndFinishBackward(): MatrixConfiguration | null {
+    if (!iterator || !methodInstance || !matrixInstance) return null;
+
+    for (let i = appliedSteps.length - 1; i >= 0; i--) {
+      const step = appliedSteps[i];
+      const revertedMatrix = step.inverse(matrixInstance.contents);
+      matrixInstance.contents = revertedMatrix;
+      appliedSteps.pop();
+    }
+
+    return methodInstance instanceof InverseMethod
+      ? {
+          type: "inverse",
+          adjusted: matrixInstance.contents,
+          inverse: inverseInstance?.contents ?? [],
+        }
+      : {
+          type: "standard",
+          matrix: matrixInstance.contents,
+        };
   },
 
   getResult(): SolutionResult | null {

@@ -1,4 +1,4 @@
-import type { SlaeMatrix } from "../math/slae-matrix";
+import type { Matrix } from "../math/Matrix";
 import { isNearZero } from "../math/utils";
 import { Step } from "./Step";
 import type { StepMetadata } from "./StepMetadata";
@@ -12,36 +12,39 @@ export class StepEliminate extends Step {
       multiplier: this._multiplier,
     };
   }
-  perform(matrix: SlaeMatrix): boolean {
-    return this.eliminateRow(matrix);
+  perform(matrix: Matrix, isStartingFromBeginning: boolean = true): boolean {
+    return this.eliminateRow(matrix, isStartingFromBeginning);
   }
 
-  private eliminateRow(augmentedMatrix: SlaeMatrix): boolean {
+  private eliminateRow(
+    augmentedMatrix: Matrix,
+    isStartingFromBeginning: boolean = true
+  ): boolean {
     const sourceRow = this.sourceRow;
     const targetRow = this.targetRow;
     const pivot = augmentedMatrix.get(sourceRow, sourceRow);
-    if (isNearZero(Math.abs(pivot))) return false;
 
-    const multiplier = -augmentedMatrix.get(targetRow, sourceRow) / pivot;
-    this._multiplier = multiplier;
+    if (this._multiplier === undefined) {
+      if (isNearZero(pivot)) return false;
+      this._multiplier = -augmentedMatrix.get(targetRow, sourceRow) / pivot;
+    }
 
-    for (let col = sourceRow; col < augmentedMatrix.cols; col++) {
+    for (
+      let col = isStartingFromBeginning ? 0 : sourceRow;
+      col < augmentedMatrix.cols;
+      col++
+    ) {
       const value =
         augmentedMatrix.get(targetRow, col) +
-        multiplier * augmentedMatrix.get(sourceRow, col);
+        this._multiplier * augmentedMatrix.get(sourceRow, col);
       augmentedMatrix.set(targetRow, col, value);
     }
-    console.log(
-      `Eliminating row ${targetRow} using row ${sourceRow} with multiplier ${multiplier}`
-    );
-
-    augmentedMatrix.set(targetRow, sourceRow, 0);
 
     return true;
   }
 
-  private _multiplier: number = 1;
-  public get multiplier(): number {
+  private _multiplier?: number;
+  public get multiplier(): number | undefined {
     return this._multiplier;
   }
 
@@ -52,7 +55,7 @@ export class StepEliminate extends Step {
   inverse(matrix: number[][]): number[][] {
     const sourceRow = this.sourceRow;
     const targetRow = this.targetRow;
-    const multiplier = this._multiplier;
+    const multiplier = this._multiplier!;
 
     if (
       sourceRow < 0 ||

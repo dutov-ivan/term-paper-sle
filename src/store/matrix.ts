@@ -1,33 +1,56 @@
 import { create } from "zustand";
-import { SlaeMatrix } from "@/lib/math/slae-matrix";
 
-export type MatrixState = {
+export type MatrixConfiguration =
+  | { type: "standard"; matrix: number[][] }
+  | { type: "inverse"; adjusted: number[][]; inverse: number[][] };
+
+export type MatrixStore = {
   isLoadingMatrix: boolean;
-  matrix: number[][] | null;
+  slae: number[][] | null;
+  matrixConfiguration: MatrixConfiguration | null;
   resize: (newSize: number) => void;
   setIsLoadingMatrix: (isLoading: boolean) => void;
-  setMatrix: (matrix: number[][]) => void;
+  setMatrix: (matrix: MatrixConfiguration) => void;
   setMatrixCell: (row: number, col: number, value: number) => void;
   currentTargetRow: number | null;
   setCurrentTargetRow: (row: number | null) => void;
 };
 
-export const useMatrixStore = create<MatrixState>((set) => ({
+export const useMatrixStore = create<MatrixStore>((set) => ({
   isLoadingMatrix: false,
-  matrix: null,
+  matrixConfiguration: null,
+  slae: null,
 
   resize: (size: number) => {
-    set({
-      matrix: new Array(size).fill(0).map(() => new Array(size + 1).fill(0)),
+    set(() => {
+      const slae = new Array(size)
+        .fill(0)
+        .map(() => new Array(size + 1).fill(0));
+      return {
+        matrixConfiguration: {
+          type: "standard",
+          matrix: slae,
+        },
+        slae,
+      };
     });
   },
   setIsLoadingMatrix: (isLoading) => set({ isLoadingMatrix: isLoading }),
-  setMatrix: (contents: number[][]) => set({ matrix: contents }),
+  setMatrix: (matrix: MatrixConfiguration) =>
+    set(() => {
+      if (matrix.type === "standard") {
+        return { matrixConfiguration: matrix, slae: matrix.matrix };
+      }
+      // Inverse state goes to inverse place
+      return { matrixConfiguration: matrix };
+    }),
   setMatrixCell: (row, col, value) =>
     set((state) => {
-      if (!state.matrix) return {};
-      state.matrix[row][col] = value;
-      return { matrix: state.matrix.map((r) => [...r]) };
+      if (!state.matrixConfiguration) return {};
+      if (state.matrixConfiguration.type !== "standard") return {};
+
+      state.matrixConfiguration.matrix[row][col] = value;
+      return { matrixConfiguration: state.matrixConfiguration };
     }),
   setCurrentTargetRow: (row) => set({ currentTargetRow: row }),
   currentTargetRow: null,

@@ -5,7 +5,7 @@ import React from "react";
 import { toast } from "sonner";
 
 const CopyMatrix = () => {
-  const matrix = useMatrixStore((state) => state.matrix);
+  const matrix = useMatrixStore((state) => state.matrixConfiguration);
   const [copied, setCopied] = React.useState(false);
 
   const copyToClipboard = async () => {
@@ -16,8 +16,8 @@ const CopyMatrix = () => {
 
     try {
       let content = "";
-      for (let i = 0; i < matrix.rows; i++) {
-        content += matrix.contents[i].join(",") + "\n";
+      for (let i = 0; i < matrix.length; i++) {
+        content += matrix[i].join(",") + "\n";
       }
       await navigator.clipboard.writeText(content);
       setCopied(true);

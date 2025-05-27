@@ -4,5 +4,5 @@ import { SolutionResultType } from "./SolutionResultType";
 export interface SolutionResult {
   result: SolutionResultType;
   roots?: number[];
-  generalForm?: string;
+  description?: string;
 }

@@ -1,4 +1,4 @@
-import { SlaeMatrix } from "../math/slae-matrix";
+import type { Matrix } from "../math/Matrix";
 import { Step } from "./Step";
 import type { StepMetadata } from "./StepMetadata";
 
@@ -14,7 +14,7 @@ export class StepSwapRows extends Step {
     super(sourceRow, targetRow);
   }
 
-  perform(matrix: SlaeMatrix): boolean {
+  perform(matrix: Matrix): boolean {
     matrix.swapRows(this.sourceRow, this.targetRow);
     return true;
   }

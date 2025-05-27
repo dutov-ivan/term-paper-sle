@@ -2,13 +2,17 @@ import { useCallback, useEffect, useRef } from "react";
 import SolutionCell from "@/components/solution/solution-cell.tsx";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Skeleton } from "../ui/skeleton";
-import { useMatrixStore } from "@/store/matrix";
 
-const SlaeDisplay = () => {
+const SlaeDisplay = ({
+  matrix,
+  isLoadingMatrix,
+  currentTargetRow,
+}: {
+  matrix?: number[][] | null;
+  isLoadingMatrix: boolean;
+  currentTargetRow: number | null;
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const matrix = useMatrixStore((state) => state.matrix);
-  const isLoadingMatrix = useMatrixStore((state) => state.isLoadingMatrix);
-  const currentTargetRow = useMatrixStore((state) => state.currentTargetRow);
   const rows = matrix ? matrix.length : 0;
   const columns = matrix ? matrix[0].length : 0;
 

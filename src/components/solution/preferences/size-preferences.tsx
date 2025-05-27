@@ -3,7 +3,7 @@ import { useMatrixStore } from "@/store/matrix";
 import SizeInput from "./size-input";
 
 const SizePreferences = () => {
-  const matrix = useMatrixStore((state) => state.matrix);
+  const matrix = useMatrixStore((state) => state.slae);
   const setSize = useMatrixStore((state) => state.resize);
 
   return (

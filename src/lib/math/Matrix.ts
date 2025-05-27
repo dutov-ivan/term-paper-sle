@@ -1,12 +1,12 @@
 // Matrix model in TypeScript
-export class Matrix<T> {
+export class Matrix {
   public readonly rows: number;
   public readonly cols: number;
-  public contents: T[][];
+  public contents: number[][];
 
   constructor(height: number, width: number);
-  constructor(data: T[][]);
-  constructor(param1: number | T[][], param2?: number) {
+  constructor(data: number[][]);
+  constructor(param1: number | number[][], param2?: number) {
     if (typeof param1 === "number" && typeof param2 === "number") {
       this.rows = param1;
       this.cols = param2;
@@ -22,11 +22,11 @@ export class Matrix<T> {
     }
   }
 
-  get(row: number, col: number): T {
+  get(row: number, col: number): number {
     return this.contents[row][col];
   }
 
-  set(x: number, y: number, value: T): void {
+  set(x: number, y: number, value: number): void {
     this.contents[x][y] = value;
   }
 
@@ -35,6 +35,23 @@ export class Matrix<T> {
       this.contents[toRow],
       this.contents[fromRow],
     ];
+  }
+
+  multiplyByVector(vector: number[]): number[] {
+    if (this.cols !== vector.length) {
+      throw new Error("Incompatible matrix and vector dimensions");
+    }
+    const result: number[] = Array(this.rows).fill(0);
+    for (let i = 0; i < this.rows; i++) {
+      for (let j = 0; j < this.cols; j++) {
+        result[i] += this.get(i, j) * vector[j];
+      }
+    }
+    return result;
+  }
+
+  toArray(): number[][] {
+    return this.contents.map((row) => [...row]);
   }
 }
 

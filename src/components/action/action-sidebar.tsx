@@ -10,7 +10,8 @@ import type { Direction } from "./action";
 import { Skeleton } from "../ui/skeleton";
 
 export default function ActionSidebar() {
-  const matrix = useMatrixStore((s) => s.matrix);
+  const slae = useMatrixStore((s) => s.slae);
+  const matrixState = useMatrixStore((s) => s.matrixConfiguration);
   const setMatrix = useMatrixStore((s) => s.setMatrix);
   const setLoadingMatrix = useMatrixStore((s) => s.setIsLoadingMatrix);
   const method = useSolutionStore((s) => s.method);
@@ -27,7 +28,8 @@ export default function ActionSidebar() {
 
   const { steps, index, move, skipAndFinish, loadingSteps } = useSolutionRunner(
     method,
-    matrix,
+    slae,
+    matrixState,
     setMatrix,
     setResult,
     setCurrentTargetRow,
@@ -45,7 +47,7 @@ export default function ActionSidebar() {
 
   const handleStart = () => {
     if (!method) return toast.error("Select a method first.");
-    if (!matrix) {
+    if (!matrixState) {
       return toast.error("Matrix is empty or invalid. Please enter a matrix.");
     }
     if (direction === "backward" && index <= 0) {
@@ -62,7 +64,7 @@ export default function ActionSidebar() {
 
   const handleReset = () => {
     if (!method) return toast.error("Select a method first.");
-    if (!matrix) {
+    if (!matrixState) {
       return toast.error("Matrix is empty or invalid. Please enter a matrix.");
     }
     setRunning(false);
@@ -85,7 +87,7 @@ export default function ActionSidebar() {
         setSpeed={setSpeed}
         isFirstStep={index === -1}
         isLastStep={result !== null}
-        canUse={!!method && !!matrix && matrix.length > 0}
+        canUse={!!method && !!matrixState}
       />
       <h1>Step list</h1>
       {loadingSteps ? (

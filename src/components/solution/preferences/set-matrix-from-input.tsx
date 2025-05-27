@@ -58,7 +58,7 @@ const SetMatrixFromInput = ({
   open: boolean;
   setOpen: (open: boolean) => void;
 }) => {
-  const matrix = useMatrixStore((state) => state.matrix);
+  const matrix = useMatrixStore((state) => state.slae);
   const setMatrix = useMatrixStore((state) => state.setMatrix);
   const [separator, setSeparator] = useState<string>(",");
   const [textareaDraft, setTextareaDraft] = useState(matrix?.join("\n") || "");
@@ -81,7 +81,10 @@ const SetMatrixFromInput = ({
   const onSubmit = () => {
     try {
       const parsedMatrix = parseMatrix(separator, textareaDraft);
-      setMatrix(parsedMatrix);
+      setMatrix({
+        type: "standard",
+        matrix: parsedMatrix,
+      });
       setOpen(false);
     } catch (error: unknown) {
       toast.error("Matrix parsing failed", {

@@ -1,6 +1,7 @@
 import { Matrix } from "./Matrix";
+import { SquareMatrix } from "./SquareMatrix";
 
-export class SlaeMatrix extends Matrix<number> {
+export class SlaeMatrix extends Matrix {
   private _size: number = this.rows;
   public get size(): number {
     return this._size;
@@ -14,5 +15,15 @@ export class SlaeMatrix extends Matrix<number> {
     const matrix = new SlaeMatrix(array.length);
     matrix.contents = array;
     return matrix;
+  }
+
+  public toSquareMatrix(): SquareMatrix {
+    const squareMatrix = new SquareMatrix(this.rows);
+    for (let i = 0; i < this.rows; i++) {
+      for (let j = 0; j < this.cols - 1; j++) {
+        squareMatrix.set(i, j, this.get(i, j));
+      }
+    }
+    return squareMatrix;
   }
 }

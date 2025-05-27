@@ -37,7 +37,7 @@ const RandomMatrixGenerator = () => {
       from: 0,
       to: 100,
     });
-  const matrix = useMatrixStore((state) => state.matrix);
+  const matrix = useMatrixStore((state) => state.slae);
 
   const setRandomMatrix = () => {
     if (!matrix) {
@@ -53,7 +53,10 @@ const RandomMatrixGenerator = () => {
           generationProperties.from,
           generationProperties.to
         );
-        setMatrix(result);
+        setMatrix({
+          type: "standard",
+          matrix: result,
+        });
         setIsLoadingMatrix(false);
       } catch (err) {
         console.error("Error generating matrix:", err);
