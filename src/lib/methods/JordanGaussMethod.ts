@@ -1,4 +1,3 @@
-// Fix .abs() and .greaterThan() errors, and SolutionResult import
 import { SlaeMatrix } from "../math/slae-matrix";
 import { SolutionResultType } from "../solution/SolutionResultType";
 import type { SolutionResult } from "../solution/SolutionResult";

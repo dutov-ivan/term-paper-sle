@@ -1,5 +1,5 @@
-import type { Matrix } from "../math/Matrix";
 import { Step } from "./Step";
+import type { Matrix } from "../math/Matrix";
 import type { StepMetadata } from "./StepMetadata";
 
 export class StepSwapRows extends Step {

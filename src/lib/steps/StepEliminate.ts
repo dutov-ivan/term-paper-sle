@@ -36,7 +36,7 @@ export class StepEliminate extends Step {
     ) {
       const value =
         augmentedMatrix.get(targetRow, col) +
-        this._multiplier * augmentedMatrix.get(sourceRow, col);
+        augmentedMatrix.get(sourceRow, col) * this._multiplier;
       augmentedMatrix.set(targetRow, col, value);
     }
 
@@ -67,13 +67,11 @@ export class StepEliminate extends Step {
     }
 
     const numCols = matrix[0].length;
-
     const result = matrix.map((row) => [...row]);
-
     for (let col = 0; col < numCols; col++) {
-      result[targetRow][col] -= multiplier * result[sourceRow][col];
+      result[targetRow][col] =
+        result[targetRow][col] - multiplier * result[sourceRow][col];
     }
-
     return result;
   }
 }

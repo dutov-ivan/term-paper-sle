@@ -12,7 +12,6 @@ interface StepListProps {
 
 const StepList: React.FC<StepListProps> = ({ steps, index }) => {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
-  console.log(steps);
   const virtualizer = useVirtualizer({
     count: index + 1,
     getScrollElement: () => containerRef.current,

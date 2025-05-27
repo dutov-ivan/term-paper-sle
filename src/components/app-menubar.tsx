@@ -54,7 +54,6 @@ const AppMenubar = () => {
   const [language, setLanguage] = useState<string>("en");
 
   useEffect(() => {
-    console.log(language);
     dynamicActivate(language);
   }, [language]);
 

@@ -15,12 +15,12 @@ export function useSolutionRunner(
   setResult: (result: SolutionResult | null) => void,
   setCurrentTargetRow: (row: number | null) => void,
   stop: () => void,
-  shouldReset: boolean,
   setLoadingMatrix: (loading: boolean) => void
 ) {
   const [steps, setSteps] = useState<StepMetadata[]>([]);
   const [loadingSteps, setLoadingSteps] = useState(false);
   const [index, setIndex] = useState(-1);
+  const isFirstStep = index === -1;
 
   const currentMatrix =
     configuration?.type === "standard"
@@ -44,7 +44,6 @@ export function useSolutionRunner(
     (async () => {
       if (!workerRef.current) return;
       startingMatrixRef.current = currentMatrix.map((row) => [...row]);
-      console.log("Setting method:", method, "with matrix:", configuration);
 
       try {
         await workerRef.current.initializeSolution(method, slae);
@@ -59,37 +58,34 @@ export function useSolutionRunner(
     })();
   }, [method]);
 
-  useEffect(() => {
-    (async () => {
-      if (!shouldReset) return;
-      if (!workerRef.current) return;
-      if (!configuration) {
-        toast.error("Matrix configuration is not set.");
-        return;
-      }
+  const reset = async () => {
+    if (!workerRef.current) return;
+    if (!configuration) {
+      toast.error("Matrix configuration is not set.");
+      return;
+    }
 
-      setResult(null);
-      setSteps([]);
-      setIndex(-1);
-      if (configuration?.type === "standard") {
-        setMatrix({
-          type: "standard",
-          matrix: startingMatrixRef.current.map((row) => [...row]),
-        });
-      } else if (configuration?.type === "inverse") {
-        setMatrix({
-          type: "inverse",
-          adjusted: startingMatrixRef.current.map((row) => [...row]),
-          inverse: [],
-        });
-      }
-      await workerRef.current.reset();
-      await workerRef.current.initializeSolution(
-        method!,
-        startingMatrixRef.current
-      );
-    })();
-  }, [shouldReset]);
+    setResult(null);
+    setSteps([]);
+    setIndex(-1);
+    if (configuration?.type === "standard") {
+      setMatrix({
+        type: "standard",
+        matrix: startingMatrixRef.current.map((row) => [...row]),
+      });
+    } else if (configuration?.type === "inverse") {
+      setMatrix({
+        type: "inverse",
+        adjusted: [], // Reset adjusted to empty array
+        inverse: [],
+      });
+    }
+    await workerRef.current.reset();
+    await workerRef.current.initializeSolution(
+      method!,
+      startingMatrixRef.current
+    );
+  };
 
   // Move forward or backward one step
   const move = async (direction: Direction) => {
@@ -128,8 +124,6 @@ export function useSolutionRunner(
       return;
     }
 
-    console.log(updatedMatrix);
-
     setSteps((prev) => [...prev, step]);
     setMatrix(updatedMatrix);
 
@@ -139,7 +133,7 @@ export function useSolutionRunner(
 
   // Move backward one step locally using history steps
   const backwardOne = async () => {
-    if (index <= 0) {
+    if (isFirstStep) {
       toast.error("Already at the beginning.");
       stop();
       return;
@@ -155,7 +149,6 @@ export function useSolutionRunner(
       toast.error("No previous step found.");
       return;
     }
-    console.log(prevStep);
 
     const newMatrix = await workerRef.current.getCurrentMatrix();
     if (!newMatrix) {
@@ -188,6 +181,10 @@ export function useSolutionRunner(
     if (direction === "forward") {
       await skipAndFinishForward();
     } else if (direction === "backward") {
+      if (index <= 0) {
+        toast.error("Already at the first step.");
+        return;
+      }
       await skipAndFinishBackward();
     }
   };
@@ -201,15 +198,16 @@ export function useSolutionRunner(
     setLoadingMatrix(true);
     setLoadingSteps(true);
 
-    const { results, matrix: updatedMatrix } =
-      (await workerRef.current.skipAndFinishForward())!;
+    const {
+      results,
+      steps,
+      matrix: updatedMatrix,
+    } = (await workerRef.current.skipAndFinishForward())!;
 
     if (results) setResult(results);
     setMatrix(updatedMatrix);
-    // Since we skip all, reset steps and index to last
-    // You may want to store full steps if your worker returns them, else just reset here
-    setSteps([]); // Or keep last steps if returned
-    setIndex(-1);
+    setSteps(steps);
+    setIndex(steps.length - 1);
 
     setLoadingSteps(false);
     setLoadingMatrix(false);
@@ -239,7 +237,8 @@ export function useSolutionRunner(
     index,
     move,
     skipAndFinish,
-    reset: stop,
+    stop,
+    reset,
     setSteps,
     setIndex,
     startingMatrixRef,

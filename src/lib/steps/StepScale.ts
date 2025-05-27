@@ -23,7 +23,7 @@ export class StepScaleAfterPivot extends Step {
       if (isNearZero(pivot)) return false;
       this._multiplier = 1 / pivot;
     }
-    if (isNearZero(Math.abs(pivot))) return false;
+    if (isNearZero(this._multiplier)) return false;
     for (
       let columnIndex = isStartingFromSource ? sourceRow : 0;
       columnIndex < matrix.cols;
@@ -32,7 +32,7 @@ export class StepScaleAfterPivot extends Step {
       matrix.set(
         sourceRow,
         columnIndex,
-        matrix.get(sourceRow, columnIndex) * this._multiplier
+        matrix.get(sourceRow, columnIndex) * this._multiplier!
       );
     }
     return true;
@@ -44,7 +44,8 @@ export class StepScaleAfterPivot extends Step {
 
   inverse(matrix: number[][]): number[][] {
     for (let col = 0; col < matrix[0].length; col++) {
-      matrix[this.sourceRow][col] *= this._multiplier!;
+      matrix[this.sourceRow][col] =
+        matrix[this.sourceRow][col] * this._multiplier!;
     }
     return matrix;
   }

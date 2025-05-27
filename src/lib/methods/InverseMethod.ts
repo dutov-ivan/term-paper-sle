@@ -18,6 +18,10 @@ export class InverseMethod extends Method {
     return this._inverseMatrix;
   }
 
+  public get adjustedMatrix(): SquareMatrix {
+    return this._adjustedMatrix;
+  }
+
   constructor(matrix: SlaeMatrix) {
     super(matrix);
     this._adjustedMatrix = matrix.toSquareMatrix();
@@ -42,7 +46,6 @@ export class InverseMethod extends Method {
         yield step;
       }
     }
-
     this._iterator = wrapper();
     return this._iterator;
   }
@@ -67,7 +70,7 @@ export class InverseMethod extends Method {
 
     return {
       result: SolutionResultType.Unique,
-      roots,
+      roots: roots,
     };
   }
 

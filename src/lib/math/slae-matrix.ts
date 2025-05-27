@@ -13,7 +13,11 @@ export class SlaeMatrix extends Matrix {
 
   static fromNumbers(array: number[][]): SlaeMatrix {
     const matrix = new SlaeMatrix(array.length);
-    matrix.contents = array;
+    for (let i = 0; i < array.length; i++) {
+      for (let j = 0; j < array[i].length; j++) {
+        matrix.set(i, j, array[i][j]);
+      }
+    }
     return matrix;
   }
 

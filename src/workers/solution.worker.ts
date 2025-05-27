@@ -20,6 +20,7 @@ export type SolutionWorker = {
   getSteps(): StepMetadata[];
   skipAndFinishForward(): {
     results: SolutionResult | null;
+    steps: StepMetadata[];
     matrix: MatrixConfiguration;
   } | null;
   skipAndFinishBackward(): MatrixConfiguration | null;
@@ -29,7 +30,6 @@ export type SolutionWorker = {
 
 let methodInstance: IMethod | null = null;
 let matrixInstance: Matrix | null = null;
-let inverseInstance: Matrix | null = null;
 let iterator: Iterator<Step> | null = null;
 let appliedSteps: Step[] = [];
 
@@ -41,11 +41,9 @@ const solutionWorker: SolutionWorker = {
     const slaeMatrix = SlaeMatrix.fromNumbers(matrix);
     matrixInstance = slaeMatrix;
     methodInstance = createSolutionMethodFromType(method, slaeMatrix);
-    if (methodInstance instanceof InverseMethod) {
-      inverseInstance = methodInstance.inverseMatrix;
-    }
     iterator = methodInstance.getForwardSteps();
     appliedSteps = [];
+    console.log(methodInstance);
   },
 
   getNextStep(): StepMetadata | null {
@@ -72,13 +70,14 @@ const solutionWorker: SolutionWorker = {
     if (methodInstance instanceof InverseMethod) {
       return {
         type: "inverse",
-        adjusted: matrixInstance!.contents,
-        inverse: inverseInstance?.contents ?? [],
+        adjusted: methodInstance.adjustedMatrix!.contents,
+        inverse: methodInstance.inverseMatrix!.contents,
       };
     }
     return {
       type: "standard",
-      matrix: matrixInstance?.contents ?? [],
+      matrix:
+        matrixInstance?.contents.map((row) => row.map((value) => value)) ?? [],
     };
   },
 
@@ -88,6 +87,7 @@ const solutionWorker: SolutionWorker = {
 
   skipAndFinishForward(): {
     results: SolutionResult | null;
+    steps: StepMetadata[];
     matrix: MatrixConfiguration;
   } | null {
     if (!iterator || !methodInstance || !matrixInstance) return null;
@@ -100,12 +100,13 @@ const solutionWorker: SolutionWorker = {
 
     return {
       results: methodInstance.backSubstitute(),
+      steps: appliedSteps.map((step) => step.toMetadata()),
       matrix:
         methodInstance instanceof InverseMethod
           ? {
               type: "inverse",
-              adjusted: matrixInstance.contents,
-              inverse: inverseInstance?.contents ?? [],
+              adjusted: methodInstance.adjustedMatrix!.contents,
+              inverse: methodInstance.inverseMatrix!.contents,
             }
           : {
               type: "standard",
@@ -127,8 +128,12 @@ const solutionWorker: SolutionWorker = {
     return methodInstance instanceof InverseMethod
       ? {
           type: "inverse",
-          adjusted: matrixInstance.contents,
-          inverse: inverseInstance?.contents ?? [],
+          adjusted: methodInstance.adjustedMatrix!.contents.map((row) =>
+            row.map((value) => value)
+          ),
+          inverse: methodInstance.inverseMatrix!.contents.map((row) =>
+            row.map((value) => value)
+          ),
         }
       : {
           type: "standard",

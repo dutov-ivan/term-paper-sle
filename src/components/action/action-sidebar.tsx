@@ -20,23 +20,22 @@ export default function ActionSidebar() {
   const setCurrentTargetRow = useMatrixStore((s) => s.setCurrentTargetRow);
 
   const [isRunning, setRunning] = useState(false);
-  const [shouldReset, setShouldReset] = useState(false);
   const [direction, setDirection] = useState<Direction>("forward");
   const [speed, setSpeed] = useState(500);
 
   const handleStop = () => setRunning(false);
 
-  const { steps, index, move, skipAndFinish, loadingSteps } = useSolutionRunner(
-    method,
-    slae,
-    matrixState,
-    setMatrix,
-    setResult,
-    setCurrentTargetRow,
-    handleStop,
-    shouldReset,
-    setLoadingMatrix
-  );
+  const { steps, index, move, skipAndFinish, loadingSteps, reset } =
+    useSolutionRunner(
+      method,
+      slae,
+      matrixState,
+      setMatrix,
+      setResult,
+      setCurrentTargetRow,
+      handleStop,
+      setLoadingMatrix
+    );
 
   useInterval(
     () => {
@@ -53,12 +52,11 @@ export default function ActionSidebar() {
     if (direction === "backward" && index <= 0) {
       return toast.error("Cannot move backward from the first step.");
     }
-    if (direction === "forward" && index !== -1 && index >= steps.length - 1) {
+    if (direction === "forward" && index !== -1 && index > steps.length - 1) {
       return toast.error("Cannot move forward from the last step.");
     }
 
     setRunning(true);
-    setShouldReset(false);
     move(direction);
   };
 
@@ -68,7 +66,7 @@ export default function ActionSidebar() {
       return toast.error("Matrix is empty or invalid. Please enter a matrix.");
     }
     setRunning(false);
-    setShouldReset(true);
+    reset();
     setResult(null);
   };
 

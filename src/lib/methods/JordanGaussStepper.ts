@@ -45,7 +45,7 @@ export class JordanGaussStepper {
 
   private *performPivotSwap(augmentedMatrix: Matrix, sourceRow: number) {
     const pivotRow = this.findPivotRow(augmentedMatrix, sourceRow);
-    if (isNearZero(Math.abs(augmentedMatrix.get(pivotRow, sourceRow)))) {
+    if (isNearZero(augmentedMatrix.get(pivotRow, sourceRow))) {
       return;
     }
     if (pivotRow !== sourceRow) {

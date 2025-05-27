@@ -1,4 +1,3 @@
-// Matrix model in TypeScript
 export class Matrix {
   public readonly rows: number;
   public readonly cols: number;
@@ -16,7 +15,7 @@ export class Matrix {
     } else if (Array.isArray(param1)) {
       this.rows = param1.length;
       this.cols = this.rows === 0 ? 0 : param1[0].length;
-      this.contents = param1;
+      this.contents = param1.map((row) => row.map((value) => value));
     } else {
       throw new Error("Invalid constructor arguments");
     }
@@ -51,7 +50,7 @@ export class Matrix {
   }
 
   toArray(): number[][] {
-    return this.contents.map((row) => [...row]);
+    return this.contents.map((row) => row.map((value) => value));
   }
 }
 

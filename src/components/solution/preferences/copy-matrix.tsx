@@ -5,7 +5,7 @@ import React from "react";
 import { toast } from "sonner";
 
 const CopyMatrix = () => {
-  const matrix = useMatrixStore((state) => state.matrixConfiguration);
+  const matrix = useMatrixStore((state) => state.slae);
   const [copied, setCopied] = React.useState(false);
 
   const copyToClipboard = async () => {
@@ -28,7 +28,7 @@ const CopyMatrix = () => {
   };
   return (
     <Button onClick={copyToClipboard} variant="outline">
-      {copied ? <CopyCheckIcon /> : <CopyIcon />}
+      Copy SLAE {copied ? <CopyCheckIcon /> : <CopyIcon />}
     </Button>
   );
 };

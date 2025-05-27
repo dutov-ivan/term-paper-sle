@@ -22,7 +22,7 @@ export class GaussMethod extends Method {
 
   private *performPivotSwap(augmentedMatrix: SlaeMatrix, sourceRow: number) {
     const pivotRow = this.findPivotRow(augmentedMatrix, sourceRow);
-    if (isNearZero(Math.abs(augmentedMatrix.get(pivotRow, sourceRow)))) {
+    if (isNearZero(augmentedMatrix.get(pivotRow, sourceRow))) {
       return;
     }
     if (pivotRow !== sourceRow) {
@@ -43,7 +43,7 @@ export class GaussMethod extends Method {
       eliminationRow++
     ) {
       const step = new StepEliminate(sourceRow, eliminationRow);
-      if (!step.perform(augmentedMatrix)) {
+      if (!step.perform(augmentedMatrix, false)) {
         continue;
       }
       yield step;
@@ -94,7 +94,7 @@ export class GaussMethod extends Method {
 
       for (let col = row + 1; col < matrix.cols - 1; col++) {
         const coeff = matrix.get(row, col);
-        sum = sum - coeff * roots[col];
+        sum -= coeff * roots[col];
       }
 
       const pivot = matrix.get(row, row);

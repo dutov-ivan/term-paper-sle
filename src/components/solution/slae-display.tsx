@@ -7,14 +7,16 @@ const SlaeDisplay = ({
   matrix,
   isLoadingMatrix,
   currentTargetRow,
+  emptyText,
 }: {
   matrix?: number[][] | null;
   isLoadingMatrix: boolean;
   currentTargetRow: number | null;
+  emptyText?: string;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rows = matrix ? matrix.length : 0;
-  const columns = matrix ? matrix[0].length : 0;
+  const columns = matrix && matrix.length !== 0 ? matrix[0].length : 0;
 
   const getScrollElement = useCallback(() => containerRef.current, []);
 
@@ -53,9 +55,9 @@ const SlaeDisplay = ({
         ]
       : [0, 0];
 
-  return !matrix ? (
+  return !matrix || matrix.length === 0 ? (
     <div className="w-full h-full flex items-center justify-center text-lg text-muted-foreground">
-      Create a matrix to get started!
+      {emptyText || "Create a matrix to get started!"}
     </div>
   ) : (
     <div

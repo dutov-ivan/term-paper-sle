@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button } from "../ui/button";
 import SlaeDisplay from "./slae-display";
 import { useMatrixStore } from "@/store/matrix";
+import { toast } from "sonner";
 
 const InverseMethodSlae = ({
   matrix,
@@ -13,38 +14,54 @@ const InverseMethodSlae = ({
   currentTargetRow: number;
 }) => {
   const matrixState = useMatrixStore((state) => state.matrixConfiguration);
+  const originalMatrix = useMatrixStore((state) => state.slae);
 
   const [inverseMethodMatrixView, setInverseMethodMatrixView] = useState<
-    "matrix" | "inverse"
-  >("matrix");
+    "original" | "adjusted" | "inverse"
+  >("original");
+
+  const getNextView = (current: "original" | "adjusted" | "inverse") => {
+    if (current === "original") return "adjusted";
+    if (current === "adjusted") return "inverse";
+    return "original";
+  };
 
   const toggleInverseMethodMatrixView = () => {
-    setInverseMethodMatrixView((prev) =>
-      prev === "matrix" ? "inverse" : "matrix"
-    );
+    if (!matrixState) {
+      toast.error("Matrix is empty or invalid. Please enter a matrix.");
+      return;
+    }
+    setInverseMethodMatrixView((prev) => getNextView(prev));
   };
+
+  const getButtonLabel = () => {
+    if (inverseMethodMatrixView === "original") return "View Adjusted";
+    if (inverseMethodMatrixView === "adjusted") return "View Inverse";
+    return "View Original";
+  };
+
+  const getMatrixForView = () => {
+    if (inverseMethodMatrixView === "original") {
+      return originalMatrix ?? matrix;
+    }
+    if (inverseMethodMatrixView === "adjusted") {
+      return matrixState?.type === "inverse" ? matrixState.adjusted : matrix;
+    }
+    // inverse
+    return matrixState?.type === "inverse" ? matrixState.inverse : matrix;
+  };
+
   return (
     <>
       <Button onClick={toggleInverseMethodMatrixView}>
-        {inverseMethodMatrixView === "matrix" ? "View Inverse" : "View Matrix"}
+        {getButtonLabel()}
       </Button>
-      {inverseMethodMatrixView === "matrix" ? (
-        <SlaeDisplay
-          matrix={
-            matrixState?.type === "inverse" ? matrixState.inverse : matrix
-          }
-          isLoadingMatrix={isLoadingMatrix}
-          currentTargetRow={currentTargetRow}
-        />
-      ) : (
-        <SlaeDisplay
-          matrix={
-            matrixState?.type === "inverse" ? matrixState.adjusted : matrix
-          }
-          isLoadingMatrix={isLoadingMatrix}
-          currentTargetRow={currentTargetRow}
-        />
-      )}
+      <SlaeDisplay
+        matrix={getMatrixForView()}
+        isLoadingMatrix={isLoadingMatrix}
+        currentTargetRow={currentTargetRow}
+        emptyText="Inverse method wasn't started yet."
+      />
     </>
   );
 };

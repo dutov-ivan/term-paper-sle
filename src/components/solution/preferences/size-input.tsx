@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ValidationAlert } from "@/components/ui/validation-alert";
+import { useMatrixStore } from "@/store/matrix";
+import { useSolutionStore } from "@/store/solution";
 import React, { useRef, useState } from "react";
 import { z } from "zod";
 
@@ -19,7 +21,24 @@ const SizeInput = ({
 }) => {
   const [sizeInput, setSizeInput] = useState(size.toString());
   const [error, setError] = useState<string | null>(null);
+  const method = useSolutionStore((s) => s.method);
+
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const validateSize = (value: string) => {
+    try {
+      const parsedSize = sizeSchema.parse(Number(value));
+      setSize(parsedSize);
+      setError(null);
+      if (method === "InverseMatrix") {
+        setMatrix();
+      }
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        setError(e.errors[0].message);
+      }
+    }
+  };
 
   return (
     <div className="flex gap-2">
@@ -35,20 +54,7 @@ const SizeInput = ({
         onClose={() => setError(null)}
         anchorRef={inputRef as React.RefObject<HTMLElement>}
       />
-      <Button
-        variant="outline"
-        onClick={() => {
-          try {
-            const parsedSize = sizeSchema.parse(Number(sizeInput));
-            setSize(parsedSize);
-            setError(null);
-          } catch (e) {
-            if (e instanceof z.ZodError) {
-              setError(e.errors[0].message);
-            }
-          }
-        }}
-      >
+      <Button variant="outline" onClick={() => validateSize(sizeInput)}>
         Set
       </Button>
     </div>
