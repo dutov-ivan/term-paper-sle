@@ -8,7 +8,10 @@ import { useState } from "react";
 function SolutionPreferences() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="flex gap-4 items-end" style={{ position: "relative" }}>
+    <div
+      className="flex gap-4 items-end flex-wrap"
+      style={{ position: "relative" }}
+    >
       <SizePreferences />
       <RandomMatrixGenerator />
       <MethodPreferences />

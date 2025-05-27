@@ -8,11 +8,17 @@ const SlaeDisplay = ({
   isLoadingMatrix,
   currentTargetRow,
   emptyText,
+  isEnterable,
+  isRunning,
+  setCell,
 }: {
   matrix?: number[][] | null;
   isLoadingMatrix: boolean;
   currentTargetRow: number | null;
   emptyText?: string;
+  isEnterable: boolean;
+  isRunning: boolean;
+  setCell: ((row: number, column: number, value: number) => void) | null;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rows = matrix ? matrix.length : 0;
@@ -112,6 +118,9 @@ const SlaeDisplay = ({
                     columnIndex={column.index}
                     rowLength={columns}
                     matrix={matrix}
+                    isRunning={isRunning}
+                    setCell={setCell}
+                    isEnterable={isEnterable}
                   />
                 )}
               </div>

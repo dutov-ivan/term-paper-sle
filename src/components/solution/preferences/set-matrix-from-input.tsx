@@ -59,7 +59,7 @@ const SetMatrixFromInput = ({
   setOpen: (open: boolean) => void;
 }) => {
   const matrix = useMatrixStore((state) => state.slae);
-  const setMatrix = useMatrixStore((state) => state.setMatrix);
+  const setMatrix = useMatrixStore((state) => state.setMatrixConfiguration);
   const [separator, setSeparator] = useState<string>(",");
   const [textareaDraft, setTextareaDraft] = useState(matrix?.join("\n") || "");
 

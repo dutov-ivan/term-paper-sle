@@ -3,7 +3,7 @@ import type { MethodType } from "@/lib/methods/IMethod";
 import type { SolutionResult } from "@/lib/solution/SolutionResult";
 import type { StepMetadata } from "@/lib/steps/StepMetadata";
 import type { MatrixConfiguration } from "@/store/matrix";
-import { createSolutionWorker } from "@/workers/solution.worker-wrapper";
+import { useSolutionWorkerStore } from "@/store/solutionWorker";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,54 +14,51 @@ export function useSolutionRunner(
   setMatrix: (contents: MatrixConfiguration) => void,
   setResult: (result: SolutionResult | null) => void,
   setCurrentTargetRow: (row: number | null) => void,
+  setIsActive: (isRunning: boolean) => void,
   stop: () => void,
-  setLoadingMatrix: (loading: boolean) => void
+  setLoadingMatrix: (loading: boolean) => void,
+  wasUpdated: boolean,
+  stopUpdating: () => void
 ) {
   const [steps, setSteps] = useState<StepMetadata[]>([]);
   const [loadingSteps, setLoadingSteps] = useState(false);
   const [index, setIndex] = useState(-1);
   const isFirstStep = index === -1;
 
-  const currentMatrix =
-    configuration?.type === "standard"
-      ? configuration.matrix
-      : configuration?.adjusted || [];
+  const worker = useSolutionWorkerStore((state) => state.worker);
 
-  const workerRef = useRef<ReturnType<typeof createSolutionWorker> | null>(
-    null
-  );
-  const startingMatrixRef = useRef<number[][]>([]);
+  const startingMatrixRef = useRef<number[][] | null>(null);
 
-  // Initialize worker once
-  useEffect(() => {
-    workerRef.current = createSolutionWorker();
-  }, []);
-
-  // Setup / reset worker state when method or matrix changes or reset requested
   useEffect(() => {
     if (!method || !slae || slae.length === 0) return;
-
-    (async () => {
-      if (!workerRef.current) return;
-      startingMatrixRef.current = currentMatrix.map((row) => [...row]);
-
-      try {
-        await workerRef.current.initializeSolution(method, slae);
-        setResult(null); // or: setResult(result) if available
-        setSteps([]);
-        setIndex(-1);
-        // You may also call setMatrix(matrix.contents); if you want to re-show matrix
-      } catch (error) {
-        toast.error("Failed to set method in worker.");
-        console.error("[useSolutionRunner] setMethod error", error);
-      }
-    })();
+    if (!startingMatrixRef.current) {
+      startingMatrixRef.current = slae.map((row) => [...row]);
+    } else {
+      reset();
+    }
   }, [method]);
 
+  useEffect(() => {
+    if (!method || !slae || slae.length === 0) return;
+    startingMatrixRef.current = slae.map((row) => [...row]);
+    reset();
+  }, [wasUpdated]);
+
   const reset = async () => {
-    if (!workerRef.current) return;
+    if (!worker) {
+      toast.error("Worker not initialized.");
+      return;
+    }
+    if (!startingMatrixRef.current) {
+      toast.error("Starting matrix is not set.");
+      return;
+    }
     if (!configuration) {
       toast.error("Matrix configuration is not set.");
+      return;
+    }
+    if (!method) {
+      toast.error("Method is not selected.");
       return;
     }
 
@@ -76,20 +73,19 @@ export function useSolutionRunner(
     } else if (configuration?.type === "inverse") {
       setMatrix({
         type: "inverse",
-        adjusted: [], // Reset adjusted to empty array
+        adjusted: [],
         inverse: [],
       });
     }
-    await workerRef.current.reset();
-    await workerRef.current.initializeSolution(
-      method!,
-      startingMatrixRef.current
-    );
+    await worker.reset();
+    await worker.setMethod(method!);
+    await worker.setMatrix(startingMatrixRef.current.map((row) => [...row]));
+    stopUpdating();
   };
 
   // Move forward or backward one step
   const move = async (direction: Direction) => {
-    if (!workerRef.current) {
+    if (!worker) {
       toast.error("Worker not initialized.");
       return;
     }
@@ -108,17 +104,18 @@ export function useSolutionRunner(
 
   // Move forward one step via worker
   const forwardOne = async () => {
-    if (!workerRef.current) return;
+    if (!worker) return;
 
-    const step = await workerRef.current.getNextStep();
+    const step = await worker.getNextStep();
     if (!step) {
-      const result = await workerRef.current.getResult();
+      const result = await worker.getResult();
       setResult(result);
+      setIsActive(false);
       toast.success("Reached the end!");
       return;
     }
 
-    const updatedMatrix = await workerRef.current.getCurrentMatrix();
+    const updatedMatrix = await worker.getCurrentMatrix();
     if (!updatedMatrix) {
       toast.error("Failed to get updated matrix.");
       return;
@@ -129,6 +126,7 @@ export function useSolutionRunner(
 
     setCurrentTargetRow(step.targetRow);
     setIndex((i) => i + 1);
+    setIsActive(true);
   };
 
   // Move backward one step locally using history steps
@@ -136,21 +134,22 @@ export function useSolutionRunner(
     if (isFirstStep) {
       toast.error("Already at the beginning.");
       stop();
+      setIsActive(false);
       return;
     }
-    if (!workerRef.current || !steps || steps.length === 0) {
+    if (!worker || !steps || steps.length === 0) {
       toast.error("No previous steps available.");
       return;
     }
 
     const prevIndex = index - 1;
-    const prevStep = await workerRef.current.getPreviousStep();
+    const prevStep = await worker.getPreviousStep();
     if (!prevStep) {
       toast.error("No previous step found.");
       return;
     }
 
-    const newMatrix = await workerRef.current.getCurrentMatrix();
+    const newMatrix = await worker.getCurrentMatrix();
     if (!newMatrix) {
       toast.error("Failed to get updated matrix.");
       return;
@@ -159,11 +158,12 @@ export function useSolutionRunner(
     setMatrix(newMatrix);
     setCurrentTargetRow(steps[prevIndex].targetRow);
     setIndex(prevIndex);
+    setIsActive(true);
   };
 
   // Skip to end or reset
   const skipAndFinish = async (direction: Direction) => {
-    if (!workerRef.current) {
+    if (!worker) {
       toast.error("Worker not initialized.");
       return;
     }
@@ -178,6 +178,7 @@ export function useSolutionRunner(
       return;
     }
 
+    setIsActive(true);
     if (direction === "forward") {
       await skipAndFinishForward();
     } else if (direction === "backward") {
@@ -187,22 +188,27 @@ export function useSolutionRunner(
       }
       await skipAndFinishBackward();
     }
+    setIsActive(false);
   };
 
   // Skip forward all steps via worker
   const skipAndFinishForward = async () => {
     stop();
 
-    if (!workerRef.current || !configuration) return;
+    if (!worker || !configuration) return;
 
     setLoadingMatrix(true);
     setLoadingSteps(true);
 
-    const {
-      results,
-      steps,
-      matrix: updatedMatrix,
-    } = (await workerRef.current.skipAndFinishForward())!;
+    const res = await worker.skipAndFinishForward();
+    if (!res) {
+      toast.error("Failed to skip and finish forward.");
+      setLoadingSteps(false);
+      setLoadingMatrix(false);
+      return;
+    }
+
+    const { results, steps, matrix: updatedMatrix } = res;
 
     if (results) setResult(results);
     setMatrix(updatedMatrix);
@@ -214,12 +220,21 @@ export function useSolutionRunner(
   };
 
   const skipAndFinishBackward = async () => {
+    if (!startingMatrixRef.current) {
+      toast.error("Starting matrix is not set.");
+      return;
+    }
+    if (!method) {
+      toast.error("Select a method first.");
+      return;
+    }
+
     stop();
-    if (!workerRef.current || !configuration) return;
+    if (!worker || !configuration) return;
 
     setSteps([]);
     setIndex(-1);
-    const newMatrix = await workerRef.current.skipAndFinishBackward();
+    const newMatrix = await worker.skipAndFinishBackward();
     if (!newMatrix) {
       toast.error("Failed to skip and finish backward.");
       return;
@@ -228,8 +243,9 @@ export function useSolutionRunner(
     setMatrix(newMatrix);
     setResult(null);
     setCurrentTargetRow(null);
-    await workerRef.current.reset();
-    await workerRef.current.initializeSolution(method!, slae!);
+    await worker.reset();
+    await worker.setMethod(method);
+    await worker.setMatrix(startingMatrixRef.current.map((row) => [...row]));
   };
 
   return {

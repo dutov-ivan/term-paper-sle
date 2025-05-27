@@ -8,10 +8,14 @@ const InverseMethodSlae = ({
   matrix,
   isLoadingMatrix,
   currentTargetRow,
+  isRunning,
+  setCell,
 }: {
-  matrix: number[][];
+  matrix: number[][] | null;
   isLoadingMatrix: boolean;
-  currentTargetRow: number;
+  currentTargetRow: number | null;
+  isRunning: boolean;
+  setCell: ((row: number, column: number, value: number) => void) | null;
 }) => {
   const matrixState = useMatrixStore((state) => state.matrixConfiguration);
   const originalMatrix = useMatrixStore((state) => state.slae);
@@ -45,12 +49,16 @@ const InverseMethodSlae = ({
       return originalMatrix ?? matrix;
     }
     if (inverseMethodMatrixView === "adjusted") {
-      return matrixState?.type === "inverse" ? matrixState.adjusted : matrix;
+      return matrixState?.type === "inverse" ? matrixState.adjusted : null;
     }
     // inverse
-    return matrixState?.type === "inverse" ? matrixState.inverse : matrix;
+    return matrixState?.type === "inverse" ? matrixState.inverse : null;
   };
 
+  // Determine if the matrix should be editable
+  const isEditable = inverseMethodMatrixView === "original";
+
+  // SlaeDisplay expects isEnterable and setCell props for editability
   return (
     <>
       <Button onClick={toggleInverseMethodMatrixView}>
@@ -61,6 +69,9 @@ const InverseMethodSlae = ({
         isLoadingMatrix={isLoadingMatrix}
         currentTargetRow={currentTargetRow}
         emptyText="Inverse method wasn't started yet."
+        isEnterable={isEditable}
+        isRunning={isRunning}
+        setCell={setCell}
       />
     </>
   );

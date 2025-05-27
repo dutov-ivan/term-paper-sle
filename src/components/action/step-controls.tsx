@@ -50,59 +50,61 @@ const StepControls = ({
   return (
     <div
       className={cn(
-        "flex gap-4 mb-4 items-center",
+        "flex flex-col gap-2 mb-4 w-full",
         !canUse && "opacity-50 pointer-events-none select-none"
       )}
     >
-      {isRunning ? (
-        <Button onClick={handleStop}>Stop</Button>
-      ) : (
-        <Button onClick={handleStart}>Start</Button>
-      )}
-
-      <Button
-        onClick={() => moveOne(direction)}
-        variant={"outline"}
-        disabled={
-          !canUse || impossibleToMoveBackward || impossibleToMoveForward
-        }
-      >
-        Move
-      </Button>
-
-      <Button onClick={toggleDirection} variant="outline">
-        {direction === "forward" ? (
-          <>
-            Forward
-            <ArrowRight />
-          </>
+      {/* First row: Start/Stop, Reset, Direction */}
+      <div className="flex gap-4 items-center w-full">
+        {isRunning ? (
+          <Button onClick={handleStop}>Stop</Button>
         ) : (
-          <>
-            Backward
-            <ArrowLeft />
-          </>
+          <Button onClick={handleStart}>Start</Button>
         )}
-      </Button>
-
-      <Button onClick={handleReset} variant="outline">
-        Reset <UndoDot />
-      </Button>
-
-      <Card className="w-full p-2">
-        <div className="flex flex-col gap-2 items-center justify-between">
-          <span>Speed: {speed}ms per step</span>
-          <Slider
-            value={[speed]}
-            min={10}
-            max={300}
-            step={10}
-            onValueChange={([val]) => setSpeed(val)}
-          />
-        </div>
-      </Card>
-      <Button onClick={() => skipAndFinish(direction)}>
-        <Goal />
-      </Button>
+        <Button onClick={handleReset} variant="outline">
+          Reset <UndoDot />
+        </Button>
+        <Button onClick={toggleDirection} variant="outline">
+          {direction === "forward" ? (
+            <>
+              Forward
+              <ArrowRight />
+            </>
+          ) : (
+            <>
+              Backward
+              <ArrowLeft />
+            </>
+          )}
+        </Button>
+      </div>
+      {/* Second row: Move, Complete, Speed */}
+      <div className="flex gap-4 items-center w-full">
+        <Button
+          onClick={() => moveOne(direction)}
+          variant={"outline"}
+          disabled={
+            !canUse || impossibleToMoveBackward || impossibleToMoveForward
+          }
+        >
+          Move
+        </Button>
+        <Button onClick={() => skipAndFinish(direction)}>
+          <Goal />
+        </Button>
+        <Card className="w-full p-2">
+          <div className="flex flex-col gap-2 items-center justify-between">
+            <span>Speed: {speed}ms per step</span>
+            <Slider
+              value={[speed]}
+              min={10}
+              max={300}
+              step={10}
+              onValueChange={([val]) => setSpeed(val)}
+            />
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };

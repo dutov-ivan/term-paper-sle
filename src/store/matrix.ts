@@ -7,13 +7,16 @@ export type MatrixConfiguration =
 export type MatrixStore = {
   isLoadingMatrix: boolean;
   slae: number[][] | null;
+  setSlae: (slae: number[][]) => void;
   matrixConfiguration: MatrixConfiguration | null;
   resize: (newSize: number) => void;
   setIsLoadingMatrix: (isLoading: boolean) => void;
-  setMatrix: (matrix: MatrixConfiguration) => void;
+  setMatrixConfiguration: (matrix: MatrixConfiguration) => void;
   setMatrixCell: (row: number, col: number, value: number) => void;
   currentTargetRow: number | null;
   setCurrentTargetRow: (row: number | null) => void;
+  wasUpdated: boolean; // Optional, used to trigger reset in hooks
+  stopUpdating: () => void; // Optional, used to trigger reset in hooks
 };
 
 export const useMatrixStore = create<MatrixStore>((set) => ({
@@ -36,13 +39,25 @@ export const useMatrixStore = create<MatrixStore>((set) => ({
     });
   },
   setIsLoadingMatrix: (isLoading) => set({ isLoadingMatrix: isLoading }),
-  setMatrix: (matrix: MatrixConfiguration) =>
+  setMatrixConfiguration: (matrix: MatrixConfiguration) =>
     set(() => {
       if (matrix.type === "standard") {
         return { matrixConfiguration: matrix, slae: matrix.matrix };
       }
       // Inverse state goes to inverse place
       return { matrixConfiguration: matrix };
+    }),
+  setSlae: (slae) =>
+    set((state) => {
+      if (!state.matrixConfiguration) return {};
+      if (state.matrixConfiguration.type !== "standard") return {};
+
+      state.matrixConfiguration.matrix = slae;
+      return {
+        matrixConfiguration: { type: "standard", matrix: slae },
+        slae,
+        wasUpdated: true,
+      };
     }),
   setMatrixCell: (row, col, value) =>
     set((state) => {
@@ -54,4 +69,6 @@ export const useMatrixStore = create<MatrixStore>((set) => ({
     }),
   setCurrentTargetRow: (row) => set({ currentTargetRow: row }),
   currentTargetRow: null,
+  wasUpdated: false,
+  stopUpdating: () => set({ wasUpdated: false }),
 }));
