@@ -100,7 +100,11 @@ function SolutionDisplay() {
         </div>
       )}
       {solutionResult && (
-        <Button onClick={() => setCurrentTab("result")}>
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={() => setCurrentTab("result")}
+        >
           <MoveRight />
         </Button>
       )}
