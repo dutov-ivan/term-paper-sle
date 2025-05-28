@@ -4,17 +4,13 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarTrigger,
-  MenubarSub,
-  MenubarSubContent,
-  MenubarSubTrigger,
 } from "@/components/ui/menubar";
 import { type Theme, useTheme } from "@/components/theme-provider.tsx";
-import { dynamicActivate, locales } from "@/lib/i18n.ts";
-import { useEffect, useState } from "react";
-import { useLingui } from "@lingui/react/macro";
-import MatrixLoadingDialog from "./matrix-upload-dialog";
-import { useImportModals } from "@/store/importModals";
+import ImportDialog from "./uploads/import-dialog";
 import { useModeStore } from "@/store/mode";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import ExportDialog from "./uploads/export-dialog";
 
 type Themes = {
   label: string;
@@ -22,40 +18,24 @@ type Themes = {
 }[];
 
 const AppMenubar = () => {
-  const importModal = useImportModals((state) => state.openedModal);
-  const setImportModal = useImportModals((state) => state.setModal);
   const setAppMode = useModeStore((state) => state.setMode);
   const { theme, setTheme } = useTheme();
-  const { t } = useLingui();
   const themes: Themes = [
     {
-      label: t({
-        id: "theme.system",
-        message: "System",
-      }),
+      label: "System",
       value: "system",
     },
     {
-      label: t({
-        id: "theme.light",
-        message: "Light",
-      }),
+      label: "Light",
       value: "light",
     },
     {
-      label: t({
-        id: "theme.dark",
-        message: "Dark",
-      }),
+      label: "Dark",
       value: "dark",
     },
   ];
-
-  const [language, setLanguage] = useState<string>("en");
-
-  useEffect(() => {
-    dynamicActivate(language);
-  }, [language]);
+  const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   return (
     <>
@@ -63,24 +43,12 @@ const AppMenubar = () => {
         <MenubarMenu>
           <MenubarTrigger>File</MenubarTrigger>
           <MenubarContent>
-            <MenubarSub>
-              <MenubarSubTrigger>Import</MenubarSubTrigger>
-              <MenubarSubContent>
-                <MenubarItem onSelect={() => setImportModal("CSV")}>
-                  CSV
-                </MenubarItem>
-                <MenubarItem onSelect={() => setImportModal("Excel")}>
-                  Excel
-                </MenubarItem>
-                <MenubarItem onSelect={() => setImportModal("JSON")}>
-                  JSON
-                </MenubarItem>
-                <MenubarItem onSelect={() => setImportModal("TXT")}>
-                  TXT
-                </MenubarItem>
-              </MenubarSubContent>
-            </MenubarSub>
-            <MenubarItem>Export matrix</MenubarItem>
+            <MenubarItem onClick={() => setImportOpen(true)}>
+              Import Matrix
+            </MenubarItem>
+            <MenubarItem onClick={() => setExportOpen(true)}>
+              Export matrix
+            </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
         <MenubarMenu>
@@ -93,10 +61,10 @@ const AppMenubar = () => {
                 className="flex items-center gap-2"
               >
                 <span
-                  className="w-2 h-2 rounded-full dark:bg-white"
-                  style={{
-                    backgroundColor: theme === value ? "black" : "transparent",
-                  }}
+                  className={cn(
+                    "w-2 h-2 rounded-full",
+                    value === theme && "bg-black dark:bg-white"
+                  )}
                 />
                 {label}
               </MenubarItem>
@@ -104,28 +72,19 @@ const AppMenubar = () => {
           </MenubarContent>
         </MenubarMenu>
         <MenubarMenu>
-          <MenubarTrigger>Language</MenubarTrigger>
-          <MenubarContent>
-            {Object.entries(locales).map(([key, value]) => (
-              <MenubarItem key={key} onSelect={() => setLanguage(key)}>
-                {value}
-              </MenubarItem>
-            ))}
-          </MenubarContent>
-        </MenubarMenu>
-        <MenubarMenu>
           <MenubarTrigger>Mode</MenubarTrigger>
           <MenubarContent>
-            <MenubarItem onSelect={() => setAppMode("graphs")}>
-              Graphing
-            </MenubarItem>
             <MenubarItem onSelect={() => setAppMode("solution")}>
               Solution
+            </MenubarItem>
+            <MenubarItem onSelect={() => setAppMode("charts")}>
+              Charts
             </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
       </Menubar>
-      {importModal && <MatrixLoadingDialog type={importModal} />}
+      <ImportDialog open={importOpen} setOpen={setImportOpen} />
+      <ExportDialog open={exportOpen} setIsOpen={setExportOpen} />
     </>
   );
 };

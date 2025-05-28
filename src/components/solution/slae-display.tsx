@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import SolutionCell from "@/components/solution/solution-cell.tsx";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Skeleton } from "../ui/skeleton";
+import { useMatrixStore } from "@/store/matrix";
 
 const SlaeDisplay = ({
   matrix,
@@ -24,13 +25,14 @@ const SlaeDisplay = ({
   const rows = matrix ? matrix.length : 0;
   const columns = matrix && matrix.length !== 0 ? matrix[0].length : 0;
 
+  const wasUpdated = useMatrixStore((state) => state.wasUpdated);
   const getScrollElement = useCallback(() => containerRef.current, []);
 
   const columnVirtualizer = useVirtualizer({
     count: columns,
     horizontal: true,
     getScrollElement,
-    estimateSize: () => 120,
+    estimateSize: () => 150,
     overscan: 5,
   });
 
@@ -48,6 +50,14 @@ const SlaeDisplay = ({
       align: "center",
     });
   }, [currentTargetRow]);
+
+  useEffect(() => {
+    // If it stopped updating, reset the scroll position
+    if (!wasUpdated) {
+      rowVirtualizer.scrollToIndex(0, { align: "start" });
+      columnVirtualizer.scrollToIndex(0, { align: "start" });
+    }
+  }, [wasUpdated]);
 
   const columnItems = columnVirtualizer.getVirtualItems();
   const rowItems = rowVirtualizer.getVirtualItems();

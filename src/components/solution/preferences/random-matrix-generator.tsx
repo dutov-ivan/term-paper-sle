@@ -13,33 +13,51 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Dices } from "lucide-react";
-import { useSolutionWorkerStore } from "@/store/solutionWorker";
-
-type GenerationProperties = {
-  from: number;
-  to: number;
-};
+import { useSolutionStore } from "@/store/solution";
+import { useSafeNumericInput } from "@/hooks/use-safe-numeric-input";
+import { MAX_AFTER_DOT } from "@/lib/math/utils";
 
 const RandomMatrixGenerator = () => {
   const setIsLoadingMatrix = useMatrixStore(
     (state) => state.setIsLoadingMatrix
   );
   const setSlae = useMatrixStore((state) => state.setSlae);
-  const [generationProperties, setGenerationProperties] =
-    useState<GenerationProperties>({
-      from: 0,
-      to: 100,
-    });
   const matrix = useMatrixStore((state) => state.slae);
+  const worker = useSolutionStore((state) => state.worker);
   const [open, setOpen] = useState(false);
-  const worker = useSolutionWorkerStore((state) => state.worker);
-  console.log("Worker in RandomMatrixGenerator:", worker);
+
+  const [from, setFrom] = useState(0);
+  const [to, setTo] = useState(100);
+
+  const {
+    safeInput: fromInput,
+    onSafeInputChange: onFromChange,
+    isValid: isFromValid,
+  } = useSafeNumericInput(from, (num) => setFrom(num), {
+    mustBeInteger: false,
+    checkValidPrecision: true,
+  });
+
+  const {
+    safeInput: toInput,
+    onSafeInputChange: onToChange,
+    isValid: isToValid,
+  } = useSafeNumericInput(to, (num) => setTo(num), {
+    mustBeInteger: false,
+    checkValidPrecision: true,
+  });
 
   const setRandomMatrix = async () => {
     if (!matrix) {
       toast.error("Please set the matrix size first.");
       return;
     }
+
+    if (from >= to) {
+      toast.error("Invalid range: 'from' must be less than 'to'.");
+      return;
+    }
+
     setIsLoadingMatrix(true);
     try {
       if (!worker) {
@@ -50,8 +68,9 @@ const RandomMatrixGenerator = () => {
       const result = await worker.generateRandomMatrix(
         matrix.length,
         matrix[0].length,
-        generationProperties.from,
-        generationProperties.to
+        from,
+        to,
+        MAX_AFTER_DOT
       );
 
       setSlae(result);
@@ -78,30 +97,25 @@ const RandomMatrixGenerator = () => {
         </DialogHeader>
         <div className="flex flex-col gap-2">
           <Input
-            value={generationProperties.from}
-            onChange={(e) =>
-              setGenerationProperties((prev) => ({
-                ...prev,
-                from: parseFloat(e.target.value),
-              }))
-            }
+            value={fromInput}
+            onChange={(e) => onFromChange(e.target.value)}
             placeholder="From"
-            type="number"
+            type="text"
           />
           <Input
-            value={generationProperties.to}
-            onChange={(e) =>
-              setGenerationProperties((prev) => ({
-                ...prev,
-                to: parseFloat(e.target.value),
-              }))
-            }
+            value={toInput}
+            onChange={(e) => onToChange(e.target.value)}
             placeholder="To"
-            type="number"
+            type="text"
           />
         </div>
         <DialogFooter>
-          <Button onClick={setRandomMatrix}>Generate</Button>
+          <Button
+            onClick={setRandomMatrix}
+            disabled={!isFromValid || !isToValid}
+          >
+            Generate
+          </Button>
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>

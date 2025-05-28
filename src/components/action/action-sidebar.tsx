@@ -28,20 +28,20 @@ export default function ActionSidebar({
   const setMatrix = useMatrixStore((s) => s.setMatrixConfiguration);
   const setLoadingMatrix = useMatrixStore((s) => s.setIsLoadingMatrix);
   const method = useSolutionStore((s) => s.method);
-  const result = useSolutionStore((s) => s.solutionResult);
   const setResult = useSolutionStore((s) => s.setSolutionResult);
   const setCurrentTargetRow = useMatrixStore((s) => s.setCurrentTargetRow);
 
+  const isActive = useSolutionStore((s) => s.isActive);
   const setIsActive = useSolutionStore((s) => s.setIsActive);
 
-  const [isRunning, setRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const [direction, setDirection] = useState<Direction>("forward");
   const [speed, setSpeed] = useState(500);
   const [isMobile, setIsMobile] = useState(false);
   const wasUpdated = useMatrixStore((s) => s.wasUpdated);
   const stopUpdating = useMatrixStore((s) => s.stopUpdating);
 
-  const handleStop = () => setRunning(false);
+  const handleStop = () => setIsRunning(false);
 
   const { steps, index, move, skipAndFinish, loadingSteps, reset } =
     useSolutionRunner(
@@ -52,6 +52,7 @@ export default function ActionSidebar({
       setResult,
       setCurrentTargetRow,
       setIsActive,
+      setIsRunning,
       handleStop,
       setLoadingMatrix,
       wasUpdated,
@@ -65,19 +66,21 @@ export default function ActionSidebar({
     isRunning ? speed : null
   );
 
+  const isLastStep = isActive && index === steps.length - 1 && index !== -1;
+
   const handleStart = () => {
     if (!method) return toast.error("Select a method first.");
     if (!matrixState) {
       return toast.error("Matrix is empty or invalid. Please enter a matrix.");
     }
-    if (direction === "backward" && index <= 0) {
+    if (direction === "backward" && index < 0) {
       return toast.error("Cannot move backward from the first step.");
     }
     if (direction === "forward" && index !== -1 && index > steps.length - 1) {
       return toast.error("Cannot move forward from the last step.");
     }
 
-    setRunning(true);
+    setIsRunning(true);
     move(direction);
   };
 
@@ -86,7 +89,7 @@ export default function ActionSidebar({
     if (!matrixState) {
       return toast.error("Matrix is empty or invalid. Please enter a matrix.");
     }
-    setRunning(false);
+    setIsRunning(false);
     reset();
     setResult(null);
   };
@@ -125,7 +128,7 @@ export default function ActionSidebar({
                 speed={speed}
                 setSpeed={setSpeed}
                 isFirstStep={index === -1}
-                isLastStep={result !== null}
+                isLastStep={isLastStep}
                 canUse={!!method && !!matrixState}
               />
               {showStepListInDrawer && (
@@ -178,7 +181,7 @@ export default function ActionSidebar({
             speed={speed}
             setSpeed={setSpeed}
             isFirstStep={index === -1}
-            isLastStep={result !== null}
+            isLastStep={isLastStep}
             canUse={!!method && !!matrixState}
           />
           <h1>Step list</h1>

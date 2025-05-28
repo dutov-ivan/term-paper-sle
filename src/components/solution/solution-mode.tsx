@@ -10,11 +10,11 @@ import {
 import { useEffect, useState } from "react";
 import { createSolutionWorker } from "@/workers/solution.worker-wrapper";
 import { toast } from "sonner";
-import { useSolutionWorkerStore } from "@/store/solutionWorker";
+import { useSolutionStore } from "@/store/solution";
 
 const SolutionMode = () => {
   const [isMobile, setIsMobile] = useState(false);
-  const setWorker = useSolutionWorkerStore((state) => state.setWorker);
+  const setWorker = useSolutionStore((state) => state.setWorker);
   useEffect(() => {
     const worker = createSolutionWorker();
     if (!worker) {

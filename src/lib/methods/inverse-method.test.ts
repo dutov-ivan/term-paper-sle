@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { InverseMethod } from "./InverseMethod";
+import { InverseMethod } from "./inverse-method";
 import { SlaeMatrix } from "../math/slae-matrix";
-import { SolutionResultType } from "../solution/SolutionResultType";
+import { SolutionResultEnum } from "../solution/solution-result-type";
 
 // Створюємо допоміжну функцію для SLAE-матриці
 function makeSlaeMatrix(matrix: number[][]): SlaeMatrix {
@@ -44,7 +44,7 @@ describe("InverseMethod", () => {
       console.log("Hello");
       Array.from(method.getForwardSteps());
       const result = method.backSubstitute();
-      expect(result.result).toBe(SolutionResultType.Unique);
+      expect(result.result).toBe(SolutionResultEnum.Unique);
       expect(result.roots).toEqual([1, 1]);
     });
   });
@@ -58,7 +58,7 @@ describe("InverseMethod", () => {
       const method = new InverseMethod(matrix);
       Array.from(method.getForwardSteps());
       const result = method.backSubstitute();
-      expect(result.result).toBe(SolutionResultType.NoneOrInfinite);
+      expect(result.result).toBe(SolutionResultEnum.NoneOrInfinite);
       expect(result.description).toBe(
         "Couldn't find inverse matrix. Cannot solve."
       );
@@ -74,7 +74,7 @@ describe("InverseMethod", () => {
       const method = new InverseMethod(matrix);
       Array.from(method.getForwardSteps());
       const result = method.backSubstitute();
-      expect(result.result).toBe(SolutionResultType.NoneOrInfinite);
+      expect(result.result).toBe(SolutionResultEnum.NoneOrInfinite);
     });
   });
 });

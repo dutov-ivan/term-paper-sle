@@ -3,7 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   getStepDescription,
   type StepMetadata,
-} from "@/lib/steps/StepMetadata";
+} from "@/lib/steps/step-metadata";
 
 interface StepListProps {
   steps: StepMetadata[];

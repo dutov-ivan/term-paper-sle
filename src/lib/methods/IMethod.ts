@@ -1,8 +1,8 @@
-import type { Step } from "../steps/Step";
-import type { SolutionResult } from "../solution/SolutionResult";
-import { GaussMethod } from "./GaussMethod";
-import { JordanGaussMethod } from "./JordanGaussMethod";
-import { InverseMethod } from "./InverseMethod";
+import type { Step } from "../steps/step";
+import type { SolutionResult } from "../solution/solution-result";
+import { GaussMethod } from "./gauss-method";
+import { JordanGaussMethod } from "./jordan-gauss-method";
+import { InverseMethod } from "./inverse-method";
 import type { SlaeMatrix } from "../math/slae-matrix";
 
 export const MethodType = {

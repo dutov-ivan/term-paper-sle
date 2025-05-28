@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { JordanGaussMethod } from "./JordanGaussMethod";
+import { JordanGaussMethod } from "./jordan-gauss-method";
 import { SlaeMatrix } from "../math/slae-matrix";
-import { SolutionResultType } from "../solution/SolutionResultType";
+import { SolutionResultEnum } from "../solution/solution-result-type";
 
 class TestMatrix extends SlaeMatrix {
   data: number[][];
@@ -30,7 +30,7 @@ describe("JordanGaussMethod", () => {
     const method = new JordanGaussMethod(matrix);
     Array.from(method.getForwardSteps());
     const result = method.backSubstitute();
-    expect(result.result).toBe(SolutionResultType.Unique);
+    expect(result.result).toBe(SolutionResultEnum.Unique);
     expect(result.roots).toEqual([1, 1]);
   });
 
@@ -43,7 +43,7 @@ describe("JordanGaussMethod", () => {
     const method = new JordanGaussMethod(matrix);
     Array.from(method.getForwardSteps());
     const result = method.backSubstitute();
-    expect(result.result).toBe(SolutionResultType.Infinite);
+    expect(result.result).toBe(SolutionResultEnum.Infinite);
     expect(result.description).toBeDefined();
   });
 
@@ -56,7 +56,7 @@ describe("JordanGaussMethod", () => {
     const method = new JordanGaussMethod(matrix);
     Array.from(method.getForwardSteps());
     const result = method.backSubstitute();
-    expect(result.result).toBe(SolutionResultType.None);
+    expect(result.result).toBe(SolutionResultEnum.None);
     expect(result.description).toBeUndefined();
     expect(result.roots).toBeUndefined();
   });
@@ -79,7 +79,7 @@ describe("JordanGaussMethod", () => {
     const method = new JordanGaussMethod(matrix);
     Array.from(method.getForwardSteps());
     const result = method.backSubstitute();
-    expect(result.result).toBe(SolutionResultType.Infinite);
+    expect(result.result).toBe(SolutionResultEnum.Infinite);
   });
 
   /*
@@ -113,7 +113,7 @@ describe("JordanGaussMethod", () => {
     ]);
     expect(stepDescriptions).toEqual(expectedSteps);
     const result = method.backSubstitute();
-    expect(result.result).toBe(SolutionResultType.Unique);
+    expect(result.result).toBe(SolutionResultEnum.Unique);
     expect(result.roots).toEqual([3, 1, 3]);
   });
   */

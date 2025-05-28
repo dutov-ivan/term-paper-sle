@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Select,
   SelectContent,
@@ -12,12 +11,11 @@ import { Label } from "@/components/ui/label.tsx";
 import { MethodType } from "@/lib/methods/IMethod.ts";
 import { useSolutionStore } from "@/store/solution";
 import { methodToString } from "./method";
-import { useSolutionWorkerStore } from "@/store/solutionWorker";
 
 const MethodPreferences = () => {
   const method = useSolutionStore((state) => state.method);
   const setStoreMethod = useSolutionStore((state) => state.setMethod);
-  const worker = useSolutionWorkerStore((state) => state.worker);
+  const worker = useSolutionStore((state) => state.worker);
 
   const setMethod = (value: MethodType) => {
     setStoreMethod(value);

@@ -5,203 +5,213 @@ import {
   type IMethod,
   type MethodType,
 } from "@/lib/methods/IMethod";
-import type { Step } from "@/lib/steps/Step";
-import type { SolutionResult } from "@/lib/solution/SolutionResult";
+import type { Step } from "@/lib/steps/step";
+import type { SolutionResult } from "@/lib/solution/solution-result";
 import { SlaeMatrix } from "@/lib/math/slae-matrix";
-import type { StepMetadata } from "@/lib/steps/StepMetadata";
-import { Matrix } from "@/lib/math/Matrix";
-import { InverseMethod } from "@/lib/methods/InverseMethod";
+import type { StepMetadata } from "@/lib/steps/step-metadata";
+import { InverseMethod } from "@/lib/methods/inverse-method";
 import type { MatrixConfiguration } from "@/store/matrix";
 
-export type SolutionWorker = {
-  setMethod: (method: MethodType) => void;
-  setSlaeCell(row: number, col: number, value: number): Promise<void>;
-  getNextStep(): StepMetadata | null;
-  getPreviousStep(): StepMetadata | null;
-  getCurrentMatrix(): MatrixConfiguration | null;
-  getSteps(): StepMetadata[];
-  skipAndFinishForward(): {
-    results: SolutionResult | null;
-    steps: StepMetadata[];
-    matrix: MatrixConfiguration;
-  } | null;
-  skipAndFinishBackward(): MatrixConfiguration | null;
-  getResult(): SolutionResult | null;
-  reset(): void;
-  generateRandomMatrix(
-    rows: number,
-    cols: number,
-    from: number,
-    to: number
-  ): Promise<number[][]>;
-  setMatrix(matrix: number[][]): Promise<void>;
-};
+export class SolutionWorker {
+  methodInstance: IMethod | null = null;
+  methodType: MethodType | null = null;
+  matrixInstance: SlaeMatrix | null = null;
+  iterator: Iterator<Step> | null = null;
+  appliedSteps: Step[] = [];
+  currentStepIndex = -1;
 
-let methodInstance: IMethod | null = null;
-let methodType: MethodType | null = null;
-let matrixInstance: Matrix | null = null;
-let iterator: Iterator<Step> | null = null;
-let appliedSteps: Step[] = [];
-
-const solutionWorker: SolutionWorker = {
   setMethod(method: MethodType): void {
-    if (methodInstance) {
-      const type = getMethodTypeFromClass(methodInstance);
+    if (this.methodInstance) {
+      const type = getMethodTypeFromClass(this.methodInstance);
       if (type === method) return;
     }
 
-    if (!matrixInstance) {
-      methodType = method;
+    if (!this.matrixInstance) {
+      this.methodType = method;
       return;
     }
 
-    methodInstance = createSolutionMethodFromType(
+    this.methodInstance = createSolutionMethodFromType(
       method,
-      matrixInstance as SlaeMatrix
+      this.matrixInstance
     );
 
-    iterator = methodInstance.getForwardSteps();
-    appliedSteps = [];
-  },
-  async setSlaeCell(row: number, col: number, value: number): Promise<void> {
-    if (!matrixInstance) throw new Error("Matrix is not initialized.");
-    console.log(
-      `WEBWORKER: Setting cell at (${row}, ${col}) to value ${value} in matrix.`
-    );
-    matrixInstance.set(row, col, value);
-  },
+    this.iterator = this.methodInstance.getForwardSteps();
+    this.appliedSteps = [];
+  }
 
   getNextStep(): StepMetadata | null {
-    console.log("WEBWORKER: Getting next step.");
-    console.log(iterator, matrixInstance, methodInstance);
-    if (!iterator || !matrixInstance || !methodInstance) return null;
+    if (!this.iterator || !this.matrixInstance || !this.methodInstance)
+      return null;
 
-    const next = iterator.next();
-    if (next.done) return null;
+    console.log("WEBWORKER: Current step index:", this.currentStepIndex);
+    if (this.currentStepIndex >= this.appliedSteps.length - 1) {
+      const next = this.iterator.next();
+      if (next.done) return null;
 
-    appliedSteps.push(next.value);
-    return next.value.toMetadata();
-  },
+      this.appliedSteps.push(next.value);
+      this.currentStepIndex++;
+    } else {
+      this.currentStepIndex++;
+      const nextMatrix = SlaeMatrix.fromMatrix(this.matrixInstance);
+      this.appliedSteps[this.currentStepIndex].perform(nextMatrix);
+      this.matrixInstance = nextMatrix;
+    }
+
+    return this.appliedSteps[this.currentStepIndex].toMetadata();
+  }
 
   getPreviousStep(): StepMetadata | null {
-    if (!matrixInstance || appliedSteps.length === 0) return null;
+    if (!this.matrixInstance || this.appliedSteps.length === 0) return null;
+    if (this.currentStepIndex === -1) return null;
 
-    const lastStep = appliedSteps.pop()!;
-    const revertedMatrix = lastStep.inverse(matrixInstance.contents);
+    const lastStep = this.appliedSteps[this.currentStepIndex];
 
-    matrixInstance.contents = revertedMatrix;
-    return lastStep.toMetadata();
-  },
+    if (this.methodInstance instanceof InverseMethod) {
+      this.methodInstance.adjustedMatrix!.contents = lastStep.inverse(
+        this.methodInstance.adjustedMatrix!.contents
+      );
+      this.methodInstance.inverseMatrix!.contents = lastStep.inverse(
+        this.methodInstance.inverseMatrix!.contents
+      );
+    } else {
+      this.matrixInstance.contents = lastStep.inverse(
+        this.matrixInstance.contents
+      );
+    }
+
+    const metadata = lastStep.toMetadata();
+    this.currentStepIndex--;
+
+    return metadata;
+  }
 
   getCurrentMatrix(): MatrixConfiguration | null {
-    if (methodInstance instanceof InverseMethod) {
+    if (this.methodInstance instanceof InverseMethod) {
       return {
         type: "inverse",
-        adjusted: methodInstance.adjustedMatrix!.contents,
-        inverse: methodInstance.inverseMatrix!.contents,
+        adjusted: this.methodInstance.adjustedMatrix!.contents,
+        inverse: this.methodInstance.inverseMatrix!.contents,
       };
     }
     return {
       type: "standard",
-      matrix:
-        matrixInstance?.contents.map((row) => row.map((value) => value)) ?? [],
+      matrix: this.matrixInstance?.contents ?? [],
     };
-  },
+  }
 
   getSteps(): StepMetadata[] {
-    return appliedSteps.map((step) => step.toMetadata());
-  },
+    return this.appliedSteps.map((step) => step.toMetadata());
+  }
 
   skipAndFinishForward(): {
     results: SolutionResult | null;
     steps: StepMetadata[];
     matrix: MatrixConfiguration;
   } | null {
-    if (!iterator || !methodInstance || !matrixInstance) return null;
+    console.log(this.iterator, this.methodInstance, this.matrixInstance);
+    if (!this.iterator || !this.methodInstance || !this.matrixInstance)
+      return null;
 
-    while (true) {
-      const next = iterator.next();
-      if (next.done) break;
-      appliedSteps.push(next.value);
-    }
+    while (this.getNextStep());
+
+    this.currentStepIndex = this.appliedSteps.length - 1;
 
     return {
-      results: methodInstance.backSubstitute(),
-      steps: appliedSteps.map((step) => step.toMetadata()),
+      results: this.methodInstance.backSubstitute(),
+      steps: this.appliedSteps.map((step) => step.toMetadata()),
       matrix:
-        methodInstance instanceof InverseMethod
+        this.methodInstance instanceof InverseMethod
           ? {
               type: "inverse",
-              adjusted: methodInstance.adjustedMatrix!.contents,
-              inverse: methodInstance.inverseMatrix!.contents,
+              adjusted: this.methodInstance.adjustedMatrix!.contents,
+              inverse: this.methodInstance.inverseMatrix!.contents,
             }
           : {
               type: "standard",
-              matrix: matrixInstance.contents,
+              matrix: this.methodInstance.matrix!.contents,
             },
     };
-  },
+  }
 
   skipAndFinishBackward(): MatrixConfiguration | null {
-    if (!iterator || !methodInstance || !matrixInstance) return null;
+    if (!this.iterator || !this.methodInstance || !this.matrixInstance)
+      return null;
 
-    for (let i = appliedSteps.length - 1; i >= 0; i--) {
-      const step = appliedSteps[i];
-      const revertedMatrix = step.inverse(matrixInstance.contents);
-      matrixInstance.contents = revertedMatrix;
-      appliedSteps.pop();
+    const methodType = getMethodTypeFromClass(this.methodInstance);
+
+    if (this.methodInstance instanceof InverseMethod) {
+      const initialMatrix = this.matrixInstance;
+      this.reset();
+      this.methodInstance = createSolutionMethodFromType(
+        methodType,
+        initialMatrix
+      );
+      this.matrixInstance = initialMatrix;
+      this.iterator = this.methodInstance.getForwardSteps();
+    } else {
+      let revertedMatrix: number[][] = this.matrixInstance.contents;
+
+      for (let i = this.appliedSteps.length - 1; i >= 0; i--) {
+        const step = this.appliedSteps[i];
+        revertedMatrix = step.inverse(revertedMatrix);
+      }
+      this.setMatrix(revertedMatrix);
     }
 
-    return methodInstance instanceof InverseMethod
+    this.setMethod(methodType);
+
+    return this.methodInstance instanceof InverseMethod
       ? {
           type: "inverse",
-          adjusted: methodInstance.adjustedMatrix!.contents.map((row) =>
-            row.map((value) => value)
-          ),
-          inverse: methodInstance.inverseMatrix!.contents.map((row) =>
-            row.map((value) => value)
-          ),
+          adjusted: this.methodInstance.adjustedMatrix!.contents,
+          inverse: this.methodInstance.inverseMatrix!.contents,
         }
       : {
           type: "standard",
-          matrix: matrixInstance.contents,
+          matrix: this.matrixInstance.contents,
         };
-  },
+  }
 
   getResult(): SolutionResult | null {
-    return methodInstance?.backSubstitute() ?? null;
-  },
+    return this.methodInstance?.backSubstitute() ?? null;
+  }
 
   reset(): void {
-    iterator = null;
-    methodInstance = null;
-    matrixInstance = null;
-    appliedSteps = [];
-  },
+    this.iterator = null;
+    this.methodInstance = null;
+    this.matrixInstance = null;
+    this.appliedSteps = [];
+    this.currentStepIndex = -1;
+  }
 
   async generateRandomMatrix(
     rows: number,
     cols: number,
     from: number,
-    to: number
+    to: number,
+    precision: number
   ): Promise<number[][]> {
     const matrix: number[][] = [];
     for (let i = 0; i < rows; i++) {
       const row: number[] = [];
       for (let j = 0; j < cols; j++) {
-        const randomValue = Math.random() * (to - from) + from;
+        const randomValue = parseFloat(
+          (Math.random() * (to - from) + from).toFixed(precision)
+        );
         row.push(randomValue);
       }
       matrix.push(row);
     }
     return matrix;
-  },
+  }
 
   async setMatrix(matrix: number[][]): Promise<void> {
-    matrixInstance = new Matrix(matrix);
-    if (!methodType) return;
-    solutionWorker.setMethod(methodType);
-  },
-};
+    this.reset();
+    this.matrixInstance = SlaeMatrix.fromNumbers(matrix);
+    if (!this.methodType) return;
+    this.setMethod(this.methodType);
+  }
+}
 
-expose(solutionWorker);
+expose(new SolutionWorker());

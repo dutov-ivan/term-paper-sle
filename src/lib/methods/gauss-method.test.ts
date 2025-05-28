@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { GaussMethod } from "./GaussMethod";
-import { SolutionResultType } from "../solution/SolutionResultType";
+import { GaussMethod } from "./gauss-method";
+import { SolutionResultEnum } from "../solution/solution-result-type";
 import { SlaeMatrix } from "../math/slae-matrix";
 import { expectMatricesClose } from "./common";
 
@@ -72,7 +72,7 @@ describe("GaussMethod", () => {
       method = new GaussMethod(matrix);
 
       const result = method.backSubstitute();
-      expect(result.result).toBe(SolutionResultType.Unique);
+      expect(result.result).toBe(SolutionResultEnum.Unique);
       expect(result.roots).toEqual([1, 2]);
     });
 
@@ -84,7 +84,7 @@ describe("GaussMethod", () => {
       method = new GaussMethod(matrix);
 
       const result = method.backSubstitute();
-      expect(result.result).toBe(SolutionResultType.None);
+      expect(result.result).toBe(SolutionResultEnum.None);
     });
   });
 
@@ -97,7 +97,7 @@ describe("GaussMethod", () => {
       method = new GaussMethod(matrix);
 
       const solutionType = (method as any).analyzeEchelonForm(method.matrix);
-      expect(solutionType).toBe(SolutionResultType.Infinite);
+      expect(solutionType).toBe(SolutionResultEnum.Infinite);
     });
 
     it("should detect no solution for inconsistent system", () => {
@@ -108,7 +108,7 @@ describe("GaussMethod", () => {
       method = new GaussMethod(matrix);
 
       const solutionType = (method as any).analyzeEchelonForm(method.matrix);
-      expect(solutionType).toBe(SolutionResultType.None);
+      expect(solutionType).toBe(SolutionResultEnum.None);
     });
 
     it("should detect unique solution for full rank matrix", () => {
@@ -119,7 +119,7 @@ describe("GaussMethod", () => {
       method = new GaussMethod(matrix);
 
       const solutionType = (method as any).analyzeEchelonForm(method.matrix);
-      expect(solutionType).toBe(SolutionResultType.Unique);
+      expect(solutionType).toBe(SolutionResultEnum.Unique);
     });
   });
 
@@ -151,7 +151,7 @@ describe("GaussMethod", () => {
       expect(steps.length).toBe(0);
 
       const solutionType = (method as any).analyzeEchelonForm(method.matrix);
-      expect(solutionType).toBe(SolutionResultType.Infinite);
+      expect(solutionType).toBe(SolutionResultEnum.Infinite);
     });
   });
 });

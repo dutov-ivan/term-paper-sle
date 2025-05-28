@@ -1,19 +1,4 @@
 import { expect } from "vitest";
-import type { SlaeMatrix } from "../math/slae-matrix";
-import type { IMethod } from "./IMethod";
-
-export const runMatrixComplete = (
-  method: IMethod,
-  matrix: SlaeMatrix
-): number[][] => {
-  const stepIterator = method.run(matrix);
-  for (const _ of stepIterator) {
-    continue;
-  }
-
-  return matrix.contents;
-};
-
 export function expectMatricesClose(
   actual: number[][],
   expected: number[][],

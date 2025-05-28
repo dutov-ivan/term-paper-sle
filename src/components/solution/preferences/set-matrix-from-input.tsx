@@ -21,27 +21,30 @@ const parseMatrix = (separator: string, text: string): number[][] => {
   const expectedColCount = rowCount + 1;
 
   const parsedMatrix = lines.map((line, rowIndex) => {
-    const values = line
-      .trim()
-      .split(separator)
-      .map((str) => {
-        const num = Number(str);
-        if (isNaN(num)) {
-          throw new Error(`Invalid number "${str}" on line ${rowIndex + 1}`);
-        }
-        return num;
-      });
+    const values =
+      separator === " "
+        ? line.trim().split(/\s+/) // split by any amount of whitespace
+        : line.trim().split(separator);
 
-    if (values.length !== expectedColCount) {
+    const parsedValues = values.map((str) => {
+      const num = Number(str);
+      if (isNaN(num)) {
+        throw new Error(`Invalid number "${str}" on line ${rowIndex + 1}`);
+      }
+      return num;
+    });
+
+    if (parsedValues.length !== expectedColCount) {
       throw new Error(
         `Line ${rowIndex + 1} must have ${expectedColCount} values (found ${
-          values.length
+          parsedValues.length
         })`
       );
     }
 
-    return values;
+    return parsedValues;
   });
+
   return parsedMatrix;
 };
 
@@ -64,14 +67,12 @@ const SetMatrixFromInput = ({
   const [textareaDraft, setTextareaDraft] = useState(matrix?.join("\n") || "");
 
   useEffect(() => {
-    if (
-      separator === "" ||
-      separator === "\n" ||
-      separator === "." ||
-      separator === "-"
-    ) {
+    if (separator === "\n" || separator === "." || separator === "-") {
       toast.error("Invalid separator. Please use a valid character.");
       setSeparator(",");
+    }
+    if (separator === "") {
+      return;
     }
     if (matrix) {
       setTextareaDraft(convertMatrixToText(matrix, separator));

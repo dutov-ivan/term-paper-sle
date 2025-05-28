@@ -6,7 +6,7 @@ import { MoveLeft, MoveRight } from "lucide-react";
 import { useState } from "react";
 import InverseMethodSlae from "./inverse-method-slae";
 import { useMatrixStore } from "@/store/matrix";
-import { useSolutionWorkerStore } from "@/store/solutionWorker";
+import { toast } from "sonner";
 
 function SolutionDisplay() {
   const solutionResult = useSolutionStore((state) => state.solutionResult);
@@ -14,12 +14,15 @@ function SolutionDisplay() {
   const method = useSolutionStore((state) => state.method);
   const matrix = useMatrixStore((state) => state.slae);
   const setSlaeCell = useMatrixStore((state) => state.setMatrixCell);
-  const worker = useSolutionWorkerStore((state) => state.worker);
+  const worker = useSolutionStore((state) => state.worker);
   const setSlae = useMatrixStore((state) => state.setSlae);
   const isRunning = useSolutionStore((state) => state.isActive);
   const isLoadingMatrix = useMatrixStore((state) => state.isLoadingMatrix);
   const currentTargetRow = useMatrixStore((state) => state.currentTargetRow);
   const isActive = useSolutionStore((state) => state.isActive);
+  const isEveryCellValid = useMatrixStore(
+    (state) => state.invalidCells.size === 0
+  );
 
   const [areChanges, setAreChanges] = useState(false);
   const [matrixBeforeChanges, setMatrixBeforeChanges] = useState<
@@ -42,6 +45,13 @@ function SolutionDisplay() {
   const applyChanges = async () => {
     if (!matrix || !worker) {
       console.error("Matrix or worker is not initialized");
+      return;
+    }
+
+    if (!isEveryCellValid) {
+      toast.error(
+        "Some cells are invalid. Please ensure all cells are filled with valid numbers."
+      );
       return;
     }
 
@@ -91,7 +101,11 @@ function SolutionDisplay() {
       {/* Apply/Reset changes controls */}
       {areChanges && (
         <div className="flex gap-2 mt-4">
-          <Button variant="default" onClick={applyChanges}>
+          <Button
+            variant="default"
+            disabled={!isEveryCellValid}
+            onClick={applyChanges}
+          >
             Apply Changes
           </Button>
           <Button variant="outline" onClick={resetChanges}>
@@ -100,11 +114,7 @@ function SolutionDisplay() {
         </div>
       )}
       {solutionResult && (
-        <Button
-          size="icon"
-          variant="outline"
-          onClick={() => setCurrentTab("result")}
-        >
+        <Button onClick={() => setCurrentTab("result")}>
           <MoveRight />
         </Button>
       )}

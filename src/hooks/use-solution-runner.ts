@@ -1,9 +1,9 @@
 import type { Direction } from "@/components/action/action";
 import type { MethodType } from "@/lib/methods/IMethod";
-import type { SolutionResult } from "@/lib/solution/SolutionResult";
-import type { StepMetadata } from "@/lib/steps/StepMetadata";
+import type { SolutionResult } from "@/lib/solution/solution-result";
+import type { StepMetadata } from "@/lib/steps/step-metadata";
 import type { MatrixConfiguration } from "@/store/matrix";
-import { useSolutionWorkerStore } from "@/store/solutionWorker";
+import { useSolutionStore } from "@/store/solution";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,7 +14,8 @@ export function useSolutionRunner(
   setMatrix: (contents: MatrixConfiguration) => void,
   setResult: (result: SolutionResult | null) => void,
   setCurrentTargetRow: (row: number | null) => void,
-  setIsActive: (isRunning: boolean) => void,
+  setIsActive: (isActive: boolean) => void,
+  setIsRunning: (isRunning: boolean) => void,
   stop: () => void,
   setLoadingMatrix: (loading: boolean) => void,
   wasUpdated: boolean,
@@ -25,7 +26,7 @@ export function useSolutionRunner(
   const [index, setIndex] = useState(-1);
   const isFirstStep = index === -1;
 
-  const worker = useSolutionWorkerStore((state) => state.worker);
+  const worker = useSolutionStore((state) => state.worker);
 
   const startingMatrixRef = useRef<number[][] | null>(null);
 
@@ -81,6 +82,7 @@ export function useSolutionRunner(
     await worker.setMethod(method!);
     await worker.setMatrix(startingMatrixRef.current.map((row) => [...row]));
     stopUpdating();
+    setIsActive(false);
   };
 
   // Move forward or backward one step
@@ -98,7 +100,7 @@ export function useSolutionRunner(
     if (direction === "forward") {
       await forwardOne();
     } else if (direction === "backward") {
-      backwardOne();
+      await backwardOne();
     }
   };
 
@@ -111,6 +113,7 @@ export function useSolutionRunner(
       const result = await worker.getResult();
       setResult(result);
       setIsActive(false);
+      setIsRunning(false);
       toast.success("Reached the end!");
       return;
     }
@@ -132,20 +135,24 @@ export function useSolutionRunner(
   // Move backward one step locally using history steps
   const backwardOne = async () => {
     if (isFirstStep) {
-      toast.error("Already at the beginning.");
+      toast.success("Already at the beginning.");
       stop();
       setIsActive(false);
+      setIsRunning(false);
       return;
     }
     if (!worker || !steps || steps.length === 0) {
       toast.error("No previous steps available.");
+      setIsRunning(false);
+      setIsActive(false);
       return;
     }
 
-    const prevIndex = index - 1;
     const prevStep = await worker.getPreviousStep();
     if (!prevStep) {
       toast.error("No previous step found.");
+      setIsRunning(false);
+      setIsActive(false);
       return;
     }
 
@@ -156,9 +163,8 @@ export function useSolutionRunner(
     }
 
     setMatrix(newMatrix);
-    setCurrentTargetRow(steps[prevIndex].targetRow);
-    setIndex(prevIndex);
-    setIsActive(true);
+    setCurrentTargetRow(steps[index].targetRow);
+    setIndex(index - 1);
   };
 
   // Skip to end or reset
@@ -209,6 +215,12 @@ export function useSolutionRunner(
     }
 
     const { results, steps, matrix: updatedMatrix } = res;
+    console.log(
+      "Skip and finish forward results:",
+      results,
+      steps,
+      updatedMatrix
+    );
 
     if (results) setResult(results);
     setMatrix(updatedMatrix);
@@ -232,9 +244,16 @@ export function useSolutionRunner(
     stop();
     if (!worker || !configuration) return;
 
+    setLoadingMatrix(true);
+    setLoadingSteps(true);
+    const newMatrix = await worker.skipAndFinishBackward();
+
+    setLoadingSteps(false);
+    setLoadingMatrix(false);
+
     setSteps([]);
     setIndex(-1);
-    const newMatrix = await worker.skipAndFinishBackward();
+
     if (!newMatrix) {
       toast.error("Failed to skip and finish backward.");
       return;
@@ -243,9 +262,6 @@ export function useSolutionRunner(
     setMatrix(newMatrix);
     setResult(null);
     setCurrentTargetRow(null);
-    await worker.reset();
-    await worker.setMethod(method);
-    await worker.setMatrix(startingMatrixRef.current.map((row) => [...row]));
   };
 
   return {

@@ -11,8 +11,7 @@ export type ChartWorker = {
     methodType: MethodType,
     size: number,
     timesPerSize: number,
-    generationOptions: SlaeGenerationOptions,
-    onStep: (stepResult: Stats) => void
+    onStep: (stepResult: MethodMetadata) => void
   ) => Promise<void>;
   generateRandomMatrix(
     rows: number,
@@ -22,11 +21,6 @@ export type ChartWorker = {
   ): number[][];
 
   terminate: () => void;
-};
-
-type SlaeGenerationOptions = {
-  from: number;
-  to: number;
 };
 
 export type ChartRunConfiguration = {
@@ -40,7 +34,6 @@ const chartWorker: ChartWorker = {
     methodType: MethodType,
     size: number,
     timesPerSize: number,
-    generationOptions: SlaeGenerationOptions,
     onStep: (stepResult: MethodMetadata) => void
   ) => {
     console.log(
@@ -48,17 +41,12 @@ const chartWorker: ChartWorker = {
     );
     for (let i = 0; i < timesPerSize; i++) {
       const matrix = SlaeMatrix.fromNumbers(
-        chartWorker.generateRandomMatrix(
-          size,
-          size,
-          generationOptions.from,
-          generationOptions.to
-        )
+        chartWorker.generateRandomMatrix(size, size, 0, size)
       );
       const method = createSolutionMethodFromType(methodType, matrix);
       const iterator = method.getForwardSteps();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      for (const step of iterator) {
+      for (const _ of iterator) {
         continue;
       }
       method.backSubstitute();

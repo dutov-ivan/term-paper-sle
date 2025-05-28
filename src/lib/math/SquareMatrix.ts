@@ -1,8 +1,13 @@
 import { Matrix } from "./Matrix";
 
 export class SquareMatrix extends Matrix {
+  private _size: number;
+  public get size(): number {
+    return this._size;
+  }
   constructor(size: number) {
     super(size, size);
+    this._size = size;
   }
 
   static identity(size: number): SquareMatrix {

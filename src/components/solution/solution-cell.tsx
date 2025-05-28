@@ -1,6 +1,9 @@
 import { Input } from "@/components/ui/input.tsx";
-import { useSafeNumericInput } from "@/hooks/useSafeNumericInput.ts";
-import "katex/dist/katex.min.css";
+import { useSafeNumericInput } from "@/hooks/use-safe-numeric-input";
+import { displayNumber, MAX_AFTER_DOT } from "@/lib/math/utils";
+import { cn } from "@/lib/utils";
+import { useMatrixStore } from "@/store/matrix";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 interface SolutionCellProps {
@@ -26,54 +29,62 @@ function SolutionCell({
 }: SolutionCellProps) {
   const isEnding = columnIndex === rowLength - 1;
   const isStarting = columnIndex === 0;
+  const addInvalidCell = useMatrixStore((state) => state.addInvalidCell);
 
-  const { value, onChange: onValueChange } = useSafeNumericInput(
-    Number(contents.toFixed(12)),
+  const removeInvalidCell = useMatrixStore((state) => state.removeInvalidCell);
+
+  const { safeInput, onSafeInputChange, isValid } = useSafeNumericInput(
+    contents,
     (num) => {
       if (isRunning) {
         toast.error("Cannot change cell value while running.");
+        return;
       }
-
       if (!matrix) return;
-
       if (setCell) {
-        console.log("Setting cell in solution:", rowIndex, columnIndex, num);
-        setCell(rowIndex, columnIndex, num);
+        const rounded = Number(num.toFixed(MAX_AFTER_DOT));
+        setCell(rowIndex, columnIndex, rounded);
       }
     }
   );
 
-  const charCount = value.length > 0 ? value.length : 1;
-  const inputWidth = `min(calc(${charCount}ch + 1.2rem), 11ch)`;
+  useEffect(() => {
+    if (!isValid) {
+      addInvalidCell(rowIndex, columnIndex);
+    } else {
+      removeInvalidCell(rowIndex, columnIndex);
+    }
+  }, [isValid]);
 
   return (
-    <div className="flex items-center justify-center p-1">
-      <div className="flex items-center justify-between w-full h-full px-2">
-        <div className="flex items-center gap-1">
-          {!isStarting && (
-            <span className="latex-symbol">{isEnding ? "=" : "+"}</span>
-          )}
-          {isEnterable ? (
-            <Input
-              disabled={isRunning || !isEnterable}
-              className="latex-input"
-              style={{ width: inputWidth, minWidth: "48px" }}
-              value={value}
-              onChange={(e) => onValueChange(e.target.value)}
-            />
-          ) : (
-            <span className="latex-symbol">{contents.toFixed(12)}</span>
-          )}
-        </div>
-        {!isEnding && (
-          <>
-            <span className="latex-symbol">&middot;</span>
-            <span className="latex-symbol">
-              x<sub>{columnIndex + 1}</sub>
-            </span>
-          </>
+    <div className="flex w-full items-center justify-center gap-2 p-2">
+      <div className="flex items-center gap-1">
+        {!isStarting && (
+          <span className="latex-symbol">{isEnding ? "=" : "+"}</span>
+        )}
+        {isEnterable ? (
+          <Input
+            disabled={isRunning}
+            className={cn(
+              "min-w-12",
+              !isValid &&
+                "border-red-500 ring-red-500 focus:ring-red-500 focus:border-red-500"
+            )}
+            value={safeInput}
+            onChange={(e) => onSafeInputChange(e.target.value)}
+          />
+        ) : (
+          <span>{displayNumber(contents)}</span>
         )}
       </div>
+      {!isEnding && (
+        <span style={{ display: "inline-flex", alignItems: "center" }}>
+          <span style={{ verticalAlign: "middle" }}>&middot;</span>
+          <span>
+            x<sub>{columnIndex + 1}</sub>
+          </span>
+        </span>
+      )}
     </div>
   );
 }

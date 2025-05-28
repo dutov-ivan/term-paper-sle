@@ -1,0 +1,237 @@
+@startuml
+skinparam linetype ortho
+left to right direction
+
+
+class SolutionWorker {
+  - method: MethodType
+  - steps: StepMetadata[]
+  - matrix: Matrix
+  + setMethod(method: MethodType): void
+  + getNextStep(): StepMetadata | null
+  + getPreviousStep(): StepMetadata | null
+  + getCurrentMatrix(): MatrixConfiguration | null
+  + getSteps(): StepMetadata[]
+  + skipAndFinishForward(): { results: SolutionResult | null, steps: StepMetadata[], matrix: MatrixConfiguration} | null
+  + skipAndFinishBackward(): MatrixConfiguration | null
+  + getResult(): SolutionResult | null
+  + reset(): void
+  + generateRandomMatrix(rows: number, cols: number, from: number, to: number): Promise<number[][]>
+  + setMatrix(matrix: number[][]): Promise<void>
+}
+
+class MatrixConfiguration {
+  + type: "standard" | "inverse"
+  + matrix: number[][]
+  + adjusted?: number[][]
+  + inverse?: number[][]
+}
+
+together {
+  class Matrix
+  class SlaeMatrix
+  class SquareMatrix
+}
+
+together {
+  abstract class Step
+  class StepEliminate
+  class StepScale
+  class StepSwapRows
+}
+
+class Matrix {
+- rows: int
+- cols: int
+- contents: double[][]
++ getRows(): int
++ getCols(): int
++ getContents(): double[][]
++ setContents(contents: double[][])
++ swapRows(fromRow: int, toRow: int)
++ multiplyByVector(vector: double[]) : double[]
+}
+
+class SlaeMatrix {
+- size: int
++ getSize(): int
++ toSquareMatrix(): double[][]
++ isZeroRowCoefficients(row: int): boolean
+}
+
+class SquareMatrix {
+    - size: int
+    + getSize(): int
+    + static identity(size: int): SquareMatrix
+}
+
+Matrix <|-- SlaeMatrix
+Matrix <|-- SquareMatrix
+
+abstract class Step {
+   + iterations: int
+   + sourceRow: int
+   + targetRow: int
+   + perform(matrix: Matrix): boolean <<abstract>>
+   + inverse(matrix: doubple[][]): double[][] <<abstract>>
+   + toMetadata(): StepMetadata <<abstract>>
+}
+
+Step --> StepMetadata : returns
+
+class StepMetadata {
+   + sourceRow: int
+   + targetRow: int
+   + type: StepType
+   + multiplier: double | null
+}
+
+StepMetadata --> StepType
+
+enum StepType {
+    Eliminate
+    Scale
+    Swap
+}
+
+class StepEliminate {
+    + perform(matrix: Matrix): boolean <<override>>
+   + inverse(matrix: doubple[][]): double[][] <<override>>
+   + toMetadata(): StepMetadata <<override>>
+}
+
+class StepScale {
+    + perform(matrix: Matrix): boolean <<override>>
+   + inverse(matrix: doubple[][]): double[][] <<override>>
+   + toMetadata(): StepMetadata <<override>>
+}
+
+class StepSwapRows {
+    + perform(matrix: Matrix): boolean <<override>>
+   + inverse(matrix: doubple[][]): double[][] <<override>>
+   + toMetadata(): StepMetadata <<override>>
+}
+
+Step <|-- StepEliminate
+Step <|-- StepScale
+Step <|-- StepSwapRows
+
+' Type alias
+class MethodMetadata {
+  +iterations:int
+  +elementaryOperations: int
+  +backSubstitutionOperations: int
+}
+
+class SolutionResult {
+  +result: SolutionResultType
+  +roots: double[] | null
+  +description: string
+}
+
+' Main abstract class
+abstract class Method {
+  +matrix: SlaeMatrix
+  +methodMetadata: MethodMetadata
+  #iterator: IterableIterator<Step>
+  +runToTheEnd(): Step[]
+  +getForwardSteps(): IterableIterator<Step> <<abstract>>
+  +backSubstitute(): SolutionResult <<abstract>>
+}
+
+class GaussMethod {
+    +getForwardSteps(): IterableIterator<Step> <<override>>
+    +backSubstitute(): SolutionResult <<override>>
+    - performRowElimination(augmentedMatrix: SlaeMatrix, sourceRow: int)
+    - findPivotRow(augmentedMatrix: SlaeMatrix, sourceRow: int)
+    - solveUpperTriangular(matrix: SlaeMatrix): double[][] 
+    - analyzeEchelonForm(matrix: SlaeMatrix): SolutionResultType
+}
+
+Method <|-- GaussMethod
+
+class JordanGaussStepper {
+  + matrix: Matrix
+  + metadata: MethodMetadata
+  + getForwardSteps(): IterableIterator<Step>
+  - performPivotSwap(augmentedMatrix: SlaeMatrix, sourceRow: int)
+  - performScaling(augmentedMatrix: SlaeMatrix, sourceRow: int)
+  - performRowElimination(augmentedMatrix: SlaeMatrix, sourceRow: int)
+  - findPivotRow(augmentedMatrix: SlaeMatrix, sourceRow: int)
+}
+
+class JordanGaussMethod {
+  - stepper: JordanGaussStepper
+  +getForwardSteps(): IterableIterator<Step> <<override>>
+  +backSubstitute(): SolutionResult <<override>>
+  - performRowElimination(augmentedMatrix: SlaeMatrix, sourceRow: int)
+  - findPivotRow(augmentedMatrix: SlaeMatrix, sourceRow: int)
+  - solveUpperTriangular(matrix: SlaeMatrix): double[][] 
+}
+JordanGaussMethod *-- JordanGaussStepper
+Method <|-- JordanGaussMethod
+
+class InverseMethod {
+  - adjustedMatrix: SquareMatrix
+  - inverseMatrix: SquareMatrix
+  - matrixStepper: JordanGaussStepper
+  - rhs: double[]
+  +getForwardSteps(): IterableIterator<Step> <<override>>
+  +backSubstitute(): SolutionResult <<override>>
+  - performRowElimination(augmentedMatrix: SlaeMatrix, sourceRow: int)
+  - findPivotRow(augmentedMatrix: SlaeMatrix, sourceRow: int)
+  - solveUpperTriangular(matrix: SlaeMatrix): double[][] 
+}
+
+InverseMethod *-- JordanGaussStepper
+Method <|-- InverseMethod
+InverseMethod o-- SquareMatrix : "adjusted matrix"
+InverseMethod o-- SquareMatrix : "inverse matrix"
+
+class SolutionWorkerStore {
+  - worker: SolutionWorker | null
+  + setWorker(worker: SolutionWorker): void
+}
+
+class SolutionStore {
+  - method: MethodType | null
+  - solutionResult: SolutionResult | null
+  - currentStepIndex: int
+  - isActive: bool
+  + setMethod(method: MethodType): void
+  + setSolutionResult(result: SolutionResult | null): void
+  + setCurrentStepIndex(index: int): void
+  + setIsActive(isRunning: bool): void
+}
+
+class MatrixStore {
+  - isLoadingMatrix: bool
+  - slae: double[][] | null
+  - matrixConfiguration: MatrixConfiguration | null
+  - currentTargetRow: int | null
+  - wasUpdated: bool
+  + setSlae(slae: double[][]): void
+  + resize(newSize: int): void
+  + setIsLoadingMatrix(isLoading: bool): void
+  + setMatrixConfiguration(matrix: MatrixConfiguration): void
+  + setMatrixCell(row: int, col: int, value: double): void
+  + setCurrentTargetRow(row: int | null): void
+  + stopUpdating(): void
+}
+
+SolutionWorkerStore --> SolutionWorker : manages
+SolutionStore --> MethodType : uses
+SolutionStore --> SolutionResult : uses
+MatrixStore --> MatrixConfiguration : manages
+MatrixStore --> Matrix : uses
+SolutionWorker --> MethodType : uses
+SolutionWorker --> StepMetadata : manages
+SolutionWorker --> Matrix : uses
+
+' Relationships
+Method --> SlaeMatrix
+Method --> Step
+Method --> SolutionResult
+Method --> MethodMetadata
+
+@enduml

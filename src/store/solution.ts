@@ -1,5 +1,6 @@
 import { type MethodType } from "@/lib/methods/IMethod";
-import type { SolutionResult } from "@/lib/solution/SolutionResult";
+import type { SolutionResult } from "@/lib/solution/solution-result";
+import type { createSolutionWorker } from "@/workers/solution.worker-wrapper";
 import { create } from "zustand";
 
 type SolutionState = {
@@ -11,6 +12,8 @@ type SolutionState = {
   setCurrentStepIndex: (index: number) => void;
   isActive: boolean;
   setIsActive: (isRunning: boolean) => void;
+  worker: ReturnType<typeof createSolutionWorker> | null;
+  setWorker: (worker: ReturnType<typeof createSolutionWorker> | null) => void;
 };
 
 export const useSolutionStore = create<SolutionState>((set) => ({
@@ -27,4 +30,6 @@ export const useSolutionStore = create<SolutionState>((set) => ({
   setCurrentStepIndex: (index) => set({ currentStepIndex: index }),
   isActive: false,
   setIsActive: (isRunning) => set({ isActive: isRunning }),
+  worker: null,
+  setWorker: (worker) => set({ worker }),
 }));

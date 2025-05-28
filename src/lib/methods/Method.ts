@@ -1,6 +1,6 @@
 import { SlaeMatrix } from "../math/slae-matrix";
-import type { SolutionResult } from "../solution/SolutionResult";
-import type { Step } from "../steps/Step";
+import type { SolutionResult } from "../solution/solution-result";
+import type { Step } from "../steps/step";
 import type { IMethod } from "./IMethod";
 
 export type MethodMetadata = {

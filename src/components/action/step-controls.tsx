@@ -83,9 +83,7 @@ const StepControls = ({
         <Button
           onClick={() => moveOne(direction)}
           variant={"outline"}
-          disabled={
-            !canUse || impossibleToMoveBackward || impossibleToMoveForward
-          }
+          disabled={isRunning || !canUse}
         >
           Move
         </Button>

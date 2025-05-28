@@ -1,8 +1,9 @@
-import type { SolutionResult } from "@/lib/solution/SolutionResult";
-import { SolutionResultType } from "@/lib/solution/SolutionResultType";
+import type { SolutionResult } from "@/lib/solution/solution-result";
+import { SolutionResultEnum } from "@/lib/solution/solution-result-type";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import * as React from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { MAX_AFTER_DOT } from "@/lib/math/utils";
 
 const ROW_HEIGHT = 36;
 
@@ -18,15 +19,15 @@ const SolutionResultDisplay = ({ result }: { result: SolutionResult }) => {
   });
 
   return (
-    <Card className="max-w-2xl mx-auto mt-6">
+    <Card className="max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>
           <span className="text-primary font-bold text-lg">
-            {result.result === SolutionResultType.Unique && "Unique Solution"}
-            {result.result === SolutionResultType.Infinite &&
+            {result.result === SolutionResultEnum.Unique && "Unique Solution"}
+            {result.result === SolutionResultEnum.Infinite &&
               "Infinite Solutions"}
-            {result.result === SolutionResultType.None && "No Solution"}
-            {result.result === SolutionResultType.NoneOrInfinite &&
+            {result.result === SolutionResultEnum.None && "No Solution"}
+            {result.result === SolutionResultEnum.NoneOrInfinite &&
               "No or Infinite Solutions"}
           </span>
         </CardTitle>
@@ -74,7 +75,7 @@ const SolutionResultDisplay = ({ result }: { result: SolutionResult }) => {
                       >
                         <td className="px-3 py-2 font-mono">{i + 1}</td>
                         <td className="px-3 py-2 font-mono">
-                          {roots[i].toFixed(12)}
+                          {roots[i].toFixed(MAX_AFTER_DOT)}
                         </td>
                       </tr>
                     );

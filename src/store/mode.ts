@@ -6,6 +6,6 @@ type ModeStore = {
 };
 
 export const useModeStore = create<ModeStore>((set) => ({
-  mode: "charts",
+  mode: "solution",
   setMode: (mode) => set({ mode }),
 }));

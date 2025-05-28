@@ -4,6 +4,7 @@ import RandomMatrixGenerator from "./preferences/random-matrix-generator";
 import CopyMatrix from "./preferences/copy-matrix";
 import SetMatrixFromInput from "./preferences/set-matrix-from-input";
 import { useState } from "react";
+import ClearMatrixPreferences from "./preferences/clear-matrix-preferences";
 
 function SolutionPreferences() {
   const [open, setOpen] = useState(false);
@@ -13,10 +14,11 @@ function SolutionPreferences() {
       style={{ position: "relative" }}
     >
       <SizePreferences />
+      <ClearMatrixPreferences />
       <RandomMatrixGenerator />
+      <SetMatrixFromInput open={open} setOpen={setOpen} />
       <MethodPreferences />
       <CopyMatrix />
-      <SetMatrixFromInput open={open} setOpen={setOpen} />
     </div>
   );
 }
