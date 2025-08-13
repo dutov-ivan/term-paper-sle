@@ -33,11 +33,7 @@ const StepControls = ({
   speed,
   setSpeed,
   canUse,
-  isFirstStep,
-  isLastStep,
 }: StepControlsProps) => {
-  const impossibleToMoveForward = isLastStep && direction === "forward";
-  const impossibleToMoveBackward = isFirstStep && direction === "backward";
 
   const toggleDirection = () => {
     if (direction === "forward") {
