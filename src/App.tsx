@@ -17,7 +17,7 @@ const App = () => {
     }
     solutionWorker.reset();
     setSlae([]);
-  }, [mode]);
+  }, [mode, setSlae, solutionWorker]);
   return mode === "solution" ? <SolutionMode /> : <ChartingMode />;
 };
 

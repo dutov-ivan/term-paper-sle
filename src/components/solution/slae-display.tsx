@@ -49,7 +49,7 @@ const SlaeDisplay = ({
       behavior: "smooth",
       align: "center",
     });
-  }, [currentTargetRow]);
+  }, [currentTargetRow, rowVirtualizer]);
 
   useEffect(() => {
     // If it stopped updating, reset the scroll position
@@ -57,7 +57,7 @@ const SlaeDisplay = ({
       rowVirtualizer.scrollToIndex(0, { align: "start" });
       columnVirtualizer.scrollToIndex(0, { align: "start" });
     }
-  }, [wasUpdated]);
+  }, [wasUpdated, rowVirtualizer, columnVirtualizer]);
 
   const columnItems = columnVirtualizer.getVirtualItems();
   const rowItems = rowVirtualizer.getVirtualItems();

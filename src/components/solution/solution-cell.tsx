@@ -54,7 +54,7 @@ function SolutionCell({
     } else {
       removeInvalidCell(rowIndex, columnIndex);
     }
-  }, [isValid]);
+  }, [isValid, rowIndex, columnIndex, addInvalidCell, removeInvalidCell]);
 
   return (
     <div className="flex w-full items-center justify-center gap-2 p-2">
