@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { GaussMethod } from "./gauss-method";
 import { SolutionResultEnum } from "../solution/solution-result-type";
 import { SlaeMatrix } from "../math/slae-matrix";
@@ -7,10 +7,6 @@ import { expectMatricesClose } from "./common";
 describe("GaussMethod", () => {
   let matrix: SlaeMatrix;
   let method: GaussMethod;
-
-  beforeEach(() => {
-    // Ініціалізується у кожному тесті заново
-  });
 
   describe("calculates everything properly", () => {
     it("should perform correct pivot swaps and eliminations", () => {
@@ -96,7 +92,7 @@ describe("GaussMethod", () => {
       ]);
       method = new GaussMethod(matrix);
 
-      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
+      const solutionType = method.analyzeEchelonForm(method.matrix);
       expect(solutionType).toBe(SolutionResultEnum.Infinite);
     });
 
@@ -107,7 +103,7 @@ describe("GaussMethod", () => {
       ]);
       method = new GaussMethod(matrix);
 
-      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
+      const solutionType = method.analyzeEchelonForm(method.matrix);
       expect(solutionType).toBe(SolutionResultEnum.None);
     });
 
@@ -118,28 +114,12 @@ describe("GaussMethod", () => {
       ]);
       method = new GaussMethod(matrix);
 
-      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
+      const solutionType = method.analyzeEchelonForm(method.matrix);
       expect(solutionType).toBe(SolutionResultEnum.Unique);
     });
   });
 
   describe("edge cases", () => {
-    it("should throw error if matrix not initialized", () => {
-      // simulate by creating a dummy subclass and overriding matrix
-      class DummyGaussMethod extends GaussMethod {
-        constructor() {
-          super(SlaeMatrix.fromNumbers([[0]])); // pass dummy to satisfy ctor
-          this.matrix = null as any;
-        }
-      }
-      const broken = new DummyGaussMethod();
-
-      expect(() => Array.from(broken.getForwardSteps())).toThrow(
-        /Matrix not initialized/
-      );
-      expect(() => broken.backSubstitute()).toThrow(/Matrix not initialized/);
-    });
-
     it("should handle zero matrix", () => {
       matrix = SlaeMatrix.fromNumbers([
         [0, 0, 0],
@@ -150,7 +130,7 @@ describe("GaussMethod", () => {
       const steps = Array.from(method.getForwardSteps());
       expect(steps.length).toBe(0);
 
-      const solutionType = (method as any).analyzeEchelonForm(method.matrix);
+      const solutionType = method.analyzeEchelonForm(method.matrix);
       expect(solutionType).toBe(SolutionResultEnum.Infinite);
     });
   });

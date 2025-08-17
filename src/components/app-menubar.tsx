@@ -5,7 +5,8 @@ import {
   MenubarItem,
   MenubarTrigger,
 } from "@/components/ui/menubar";
-import { type Theme, useTheme } from "@/components/theme-provider.tsx";
+import { type Theme } from "@/components/theme-provider.tsx";
+import { useTheme } from "@/hooks/use-theme";
 import ImportDialog from "./uploads/import-dialog";
 import { useModeStore } from "@/store/mode";
 import { useState } from "react";

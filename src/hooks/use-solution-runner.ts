@@ -4,7 +4,7 @@ import type { SolutionResult } from "@/lib/solution/solution-result";
 import type { StepMetadata } from "@/lib/steps/step-metadata";
 import type { MatrixConfiguration } from "@/store/matrix";
 import { useSolutionStore } from "@/store/solution";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export function useSolutionRunner(
@@ -30,22 +30,7 @@ export function useSolutionRunner(
 
   const startingMatrixRef = useRef<number[][] | null>(null);
 
-  useEffect(() => {
-    if (!method || !slae || slae.length === 0) return;
-    if (!startingMatrixRef.current) {
-      startingMatrixRef.current = slae.map((row) => [...row]);
-    } else {
-      reset();
-    }
-  }, [method]);
-
-  useEffect(() => {
-    if (!method || !slae || slae.length === 0) return;
-    startingMatrixRef.current = slae.map((row) => [...row]);
-    reset();
-  }, [wasUpdated]);
-
-  const reset = async () => {
+  const reset = useCallback(async () => {
     if (!worker) {
       toast.error("Worker not initialized.");
       return;
@@ -83,7 +68,31 @@ export function useSolutionRunner(
     await worker.setMatrix(startingMatrixRef.current.map((row) => [...row]));
     stopUpdating();
     setIsActive(false);
-  };
+  }, [
+    worker,
+    startingMatrixRef,
+    configuration,
+    method,
+    setIsActive,
+    setMatrix,
+    stopUpdating,
+    setResult,
+  ]);
+
+  useEffect(() => {
+    if (!method || !slae || slae.length === 0) return;
+    if (!startingMatrixRef.current) {
+      startingMatrixRef.current = slae.map((row) => [...row]);
+    } else {
+      reset();
+    }
+  }, [method, slae, reset]);
+
+  useEffect(() => {
+    if (!method || !slae || slae.length === 0) return;
+    startingMatrixRef.current = slae.map((row) => [...row]);
+    reset();
+  }, [wasUpdated, method, slae, reset]);
 
   // Move forward or backward one step
   const move = async (direction: Direction) => {

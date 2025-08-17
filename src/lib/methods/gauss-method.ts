@@ -93,7 +93,7 @@ export class GaussMethod extends Method {
     };
   }
 
-  private analyzeEchelonForm(matrix: SlaeMatrix): SolutionResultType {
+  analyzeEchelonForm(matrix: SlaeMatrix): SolutionResultType {
     let rank = 0;
     const rows = matrix.rows;
     const cols = matrix.cols - 1;

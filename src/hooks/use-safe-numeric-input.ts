@@ -72,7 +72,7 @@ export const useSafeNumericInput = (
       setParsedValue(Number(inputAsString));
       setIsValid(true);
     }
-  }, [input]);
+  }, [input, safeInput]);
 
   function maybeShowToast(message: string) {
     const now = Date.now();
